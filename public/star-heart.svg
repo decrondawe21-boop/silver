@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 760" fill="none">
+  <defs>
+    <path id="heart-line" d="M450 694C424 585 300 510 218 396C122 263 170 109 313 111C392 112 433 175 450 245C467 175 508 112 587 111C730 109 778 263 682 396C600 510 476 585 450 694Z" />
+    <filter id="soft-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g filter="url(#soft-glow)" opacity="0.92">
+    <use href="#heart-line" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 13" opacity="0.72" />
+    <use href="#heart-line" stroke="#dffdf3" stroke-width="13" stroke-linecap="round" stroke-dasharray="1 19" opacity="0.34" />
+    <use href="#heart-line" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-dasharray="0.6 27" opacity="0.22" />
+  </g>
+
+  <g opacity="0.62">
+    <circle cx="192" cy="123" r="2.4" fill="#ffffff" />
+    <circle cx="226" cy="147" r="1.8" fill="#ffffff" />
+    <circle cx="264" cy="132" r="2.2" fill="#dffdf3" />
+    <circle cx="296" cy="166" r="2.8" fill="#ffffff" />
+    <circle cx="340" cy="182" r="2.1" fill="#ffffff" />
+    <circle cx="382" cy="226" r="2.5" fill="#dffdf3" />
+    <circle cx="156" cy="224" r="2.2" fill="#ffffff" />
+    <circle cx="198" cy="257" r="3.2" fill="#ffffff" />
+    <circle cx="244" cy="291" r="2.3" fill="#ffffff" />
+    <circle cx="286" cy="326" r="3.4" fill="#dffdf3" />
+    <circle cx="326" cy="368" r="2.2" fill="#ffffff" />
+    <circle cx="370" cy="420" r="3" fill="#ffffff" />
+    <circle cx="400" cy="474" r="2.4" fill="#dffdf3" />
+    <circle cx="430" cy="546" r="2.1" fill="#ffffff" />
+    <circle cx="462" cy="616" r="2.7" fill="#ffffff" />
+    <circle cx="540" cy="144" r="2.2" fill="#ffffff" />
+    <circle cx="594" cy="136" r="1.7" fill="#dffdf3" />
+    <circle cx="650" cy="172" r="2.6" fill="#ffffff" />
+    <circle cx="704" cy="244" r="2.1" fill="#ffffff" />
+    <circle cx="690" cy="324" r="2.8" fill="#dffdf3" />
+    <circle cx="636" cy="410" r="2" fill="#ffffff" />
+    <circle cx="560" cy="500" r="2.5" fill="#ffffff" />
+  </g>
+
+  <g fill="#ffffff" opacity="0.78">
+    <path d="M128 70L137 96L163 105L137 114L128 140L119 114L93 105L119 96Z" />
+    <path d="M230 55L237 75L257 82L237 89L230 109L223 89L203 82L223 75Z" />
+    <path d="M302 92L309 112L329 119L309 126L302 146L295 126L275 119L295 112Z" />
+    <path d="M176 182L184 206L208 214L184 222L176 246L168 222L144 214L168 206Z" />
+    <path d="M270 256L280 286L310 296L280 306L270 336L260 306L230 296L260 286Z" />
+    <path d="M332 356L339 376L359 383L339 390L332 410L325 390L305 383L325 376Z" />
+    <path d="M394 458L404 488L434 498L404 508L394 538L384 508L354 498L384 488Z" />
+    <path d="M608 168L615 188L635 195L615 202L608 222L601 202L581 195L601 188Z" />
+  </g>
+</svg>
