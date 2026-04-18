@@ -1,5 +1,6 @@
 import type React from "react"
 import type { Metadata } from "next"
+import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeInit } from "@once-ui-system/core"
 import OnceUiProviders from "@/app/once-ui-providers"
@@ -10,6 +11,47 @@ import "@once-ui-system/core/css/tokens.css"
 import "./globals.css"
 
 const siteUrl = getSiteUrl()
+
+const browserExtensionHydrationGuard = `
+(() => {
+  const attribute = "fdprocessedid";
+  const cleanup = (root) => {
+    if (!root) return;
+    if (root.nodeType === 1 && root.hasAttribute && root.hasAttribute(attribute)) {
+      root.removeAttribute(attribute);
+    }
+    if (root.querySelectorAll) {
+      root.querySelectorAll("[" + attribute + "]").forEach((node) => node.removeAttribute(attribute));
+    }
+  };
+
+  cleanup(document);
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => cleanup(document), { once: true });
+  }
+
+  if (typeof MutationObserver === "undefined") return;
+
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === "attributes") {
+        cleanup(mutation.target);
+      }
+      mutation.addedNodes.forEach((node) => cleanup(node));
+    }
+  });
+
+  observer.observe(document.documentElement, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: [attribute],
+  });
+
+  window.setTimeout(() => observer.disconnect(), 8000);
+})();
+`
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -87,6 +129,11 @@ export default function RootLayout({
     >
       <head>
         <ThemeInit config={onceUiTheme} />
+        <Script
+          id="browser-extension-hydration-guard"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: browserExtensionHydrationGuard }}
+        />
       </head>
       <body>
         <OnceUiProviders>{children}</OnceUiProviders>

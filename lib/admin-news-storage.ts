@@ -1,8 +1,26 @@
 import type { HomeNewsItem } from "@/resources/admin-content"
 import { adminStorageKey } from "@/resources/admin-content"
 
+export type StoredNewsResult =
+  | {
+      status: "saved"
+      items: HomeNewsItem[]
+    }
+  | {
+      status: "saved-without-images"
+      items: HomeNewsItem[]
+    }
+  | {
+      status: "failed"
+      items: HomeNewsItem[]
+    }
+
 function isBrowser() {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined"
+}
+
+function withoutEmbeddedImages(items: HomeNewsItem[]) {
+  return items.map(({ imageDataUrl, ...item }) => item)
 }
 
 export function readStoredNews() {
@@ -23,12 +41,24 @@ export function readStoredNews() {
   }
 }
 
-export function writeStoredNews(items: HomeNewsItem[]) {
+export function writeStoredNews(items: HomeNewsItem[]): StoredNewsResult {
   if (!isBrowser()) {
-    return
+    return { status: "saved", items }
   }
 
-  window.localStorage.setItem(adminStorageKey, JSON.stringify(items))
+  try {
+    window.localStorage.setItem(adminStorageKey, JSON.stringify(items))
+    return { status: "saved", items }
+  } catch {
+    const compactItems = withoutEmbeddedImages(items)
+
+    try {
+      window.localStorage.setItem(adminStorageKey, JSON.stringify(compactItems))
+      return { status: "saved-without-images", items: compactItems }
+    } catch {
+      return { status: "failed", items }
+    }
+  }
 }
 
 export function mergePublishedNews(defaultItems: HomeNewsItem[], storedItems: HomeNewsItem[]) {

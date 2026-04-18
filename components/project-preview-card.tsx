@@ -11,18 +11,34 @@ export default function ProjectPreviewCard({
   variant: "dominant" | "compact"
 }) {
   const host = getProjectHost(project.url)
+  const previewUrl = getProjectPreviewUrl(project.url)
 
   return (
     <article className={`public-project-card project-card-${variant}`}>
-      <div className="project-preview" aria-hidden="true">
+      <a
+        className="project-preview"
+        href={project.url}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={`Otevřít náhled projektu ${project.name}`}
+      >
+        <div className="project-preview-browser">
+          <span />
+          <span />
+          <span />
+          <strong>{host}</strong>
+        </div>
         <div className="project-preview-fallback">
           <span>{project.name}</span>
         </div>
-        <span
+        <img
+          alt={`Náhled webu ${project.name}`}
           className="project-preview-image"
-          style={{ backgroundImage: `url("${getProjectPreviewUrl(project.url)}")` }}
+          decoding="async"
+          loading="lazy"
+          src={previewUrl}
         />
-      </div>
+      </a>
       <div className="project-card-copy">
         <div className="project-card-meta">
           <span>{String(index + 1).padStart(2, "0")}</span>

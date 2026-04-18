@@ -56,7 +56,7 @@ export default function ElectricBorderCard() {
           <div className="content-top">
             <div className="scrollbar-glass">David Kozák
 </div>
-            <p className="title tracking-tighter">Toto je cesta, která má smysl...</p>
+            <p className="title tracking-tighter">Druhou šanci si zaslouží každý.</p>
           </div>
 
           <hr className="divider" />

@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+import { redirect } from "next/navigation"
+import AdminLoginPanel from "@/components/admin-login-panel"
 import SiteFrame from "@/components/site-frame"
+import { readAuthenticatedAdminFromCookies } from "@/lib/admin-auth"
 
 export const metadata: Metadata = {
   title: "Přihlášení | David Kozák Silver",
@@ -11,7 +13,12 @@ export const metadata: Metadata = {
   },
 }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const admin = await readAuthenticatedAdminFromCookies()
+  if (admin) {
+    redirect("/dashboard")
+  }
+
   return (
     <SiteFrame>
       <section className="login-page" aria-labelledby="login-title">
@@ -28,35 +35,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <form className="login-panel">
-          <div className="login-panel-heading">
-            <span>Administrace</span>
-            <h2>Přihlášení</h2>
-            <p>Formulář je připravený pro napojení na ověřování účtu.</p>
-          </div>
-
-          <label className="form-field">
-            <span>E-mail</span>
-            <input type="email" name="email" autoComplete="email" placeholder="admin@david-kozak.com" />
-          </label>
-
-          <label className="form-field">
-            <span>Heslo</span>
-            <input type="password" name="password" autoComplete="current-password" placeholder="••••••••••••" />
-          </label>
-
-          <div className="login-options">
-            <label>
-              <input type="checkbox" name="remember" />
-              <span>Zapamatovat zařízení</span>
-            </label>
-            <a href="mailto:kontakt@david-kozak.com">Obnovit přístup</a>
-          </div>
-
-          <Link className="primary-action login-submit" href="/dashboard">
-            Otevřít dashboard
-          </Link>
-        </form>
+        <AdminLoginPanel />
       </section>
     </SiteFrame>
   )

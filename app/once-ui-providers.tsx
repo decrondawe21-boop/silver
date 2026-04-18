@@ -8,12 +8,13 @@ import {
   LayoutProvider,
   ThemeProvider,
   ToastProvider,
+  iconLibrary,
 } from "@once-ui-system/core"
-import { onceUiTheme } from "@/resources/once-ui.config"
+import { onceUiBreakpoints, onceUiDataTheme, onceUiTheme } from "@/resources/once-ui.config"
 
 export default function OnceUiProviders({ children }: { children: React.ReactNode }) {
   return (
-    <LayoutProvider>
+    <LayoutProvider breakpoints={onceUiBreakpoints}>
       <ThemeProvider
         theme={onceUiTheme.theme}
         brand={onceUiTheme.brand}
@@ -26,9 +27,15 @@ export default function OnceUiProviders({ children }: { children: React.ReactNod
         transition={onceUiTheme.transition}
         scaling={onceUiTheme.scaling}
       >
-        <DataThemeProvider>
+        <DataThemeProvider
+          variant={onceUiDataTheme.variant}
+          mode={onceUiDataTheme.mode}
+          height={onceUiDataTheme.height}
+          axis={onceUiDataTheme.axis}
+          tick={onceUiDataTheme.tick}
+        >
           <ToastProvider>
-            <IconProvider>
+            <IconProvider icons={iconLibrary}>
               <Column background="page" fillWidth margin="0" minHeight="100vh" padding="0">
                 {children}
               </Column>

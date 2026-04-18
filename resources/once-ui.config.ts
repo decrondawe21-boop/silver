@@ -21,3 +21,25 @@ export const onceUiTheme = {
   scaling: "100",
   "viz-style": "gradient",
 } as const
+
+export const onceUiBreakpoints = {
+  xs: 480,
+  s: 620,
+  m: 920,
+  l: 1180,
+  xl: Number.POSITIVE_INFINITY,
+} as const
+
+export const onceUiDataTheme = {
+  variant: onceUiTheme["viz-style"],
+  mode: "categorical",
+  height: 24,
+  axis: {
+    stroke: "var(--neutral-alpha-weak)",
+  },
+  tick: {
+    fill: "var(--neutral-on-background-weak)",
+    fontSize: 11,
+    line: false,
+  },
+} as const
