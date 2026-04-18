@@ -4,7 +4,17 @@ import { Column } from "@once-ui-system/core/components/Column"
 import { FlipFx } from "@once-ui-system/core/components/FlipFx"
 import { Text } from "@once-ui-system/core/components/Text"
 
-export default function HeroImageFlip() {
+export default function HeroImageFlip({
+  imageAlt = "Černobílá cesta k horám s osobním mottem",
+  imageUrl = "/hero-road-meaning.png",
+  quote = "Druhou šanci si zaslouží každý.",
+  text = "Vize, kreativita a realita nejsou zkratka. Jsou směr, kterým se dá znovu začít.",
+}: {
+  imageAlt?: string
+  imageUrl?: string
+  quote?: string
+  text?: string
+}) {
   return (
     <FlipFx
       className="hero-image-flip"
@@ -12,7 +22,7 @@ export default function HeroImageFlip() {
       timing={900}
       front={
         <div className="portrait-flip-face portrait-flip-front">
-          <img src="/hero-road-meaning.png" alt="Černobílá cesta k horám s osobním mottem" />
+          <img src={imageUrl} alt={imageAlt} />
           <span>Klikni pro popisek</span>
         </div>
       }
@@ -22,10 +32,10 @@ export default function HeroImageFlip() {
             Popisek obrázku
           </Text>
           <Text as="strong" variant="heading-strong-xl">
-            Druhou šanci si zaslouží každý.
+            {quote}
           </Text>
           <Text as="p" variant="body-default-m" onBackground="neutral-weak">
-            Vize, kreativita a realita nejsou zkratka. Jsou směr, kterým se dá znovu začít.
+            {text}
           </Text>
         </Column>
       }

@@ -1,47 +1,45 @@
 import type { Metadata } from "next"
 import ElectricPanel from "@/components/electric-panel"
 import SiteFrame from "@/components/site-frame"
+import { getEditablePageByPath, getEditableSection } from "@/lib/site-content-db"
 
 export const metadata: Metadata = {
   title: "Kontakt | David Kozák Silver",
   description: "Kontakt pro spolupráci na webu, osobní prezentaci, automatizaci a digitální strategii.",
 }
 
-export default function KontaktPage() {
+export const dynamic = "force-dynamic"
+
+export default async function KontaktPage() {
+  const page = await getEditablePageByPath("/kontakt")
+  const contact = getEditableSection(page, "contact-main")
+
   return (
     <SiteFrame>
       <section className="subpage-hero">
-        <p className="eyebrow">Kontakt</p>
-        <h1>Pojďme společně tvořit budoucnost.</h1>
-        <p>Propojíme vizi s realitou a sny se stanou skutečností.</p>
+        <p className="eyebrow">{contact?.eyebrow || "Kontakt"}</p>
+        <h1>{contact?.title || "Pojďme společně tvořit budoucnost."}</h1>
+        <p>{contact?.text || "Propojíme vizi s realitou a sny se stanou skutečností."}</p>
       </section>
 
       <section className="contact-grid">
         <ElectricPanel className="contact-panel">
           <p className="eyebrow">E-mail</p>
-          <h2>Nejrychlejší cesta k domluvě.</h2>
-          <p>Stačí krátce napsat, co chceš posunout a jaký výsledek má dávat smysl.</p>
-          <a className="primary-action" href="mailto:kontakt@david-kozak.com">
-            kontakt@david-kozak.com
+          <h2>{contact?.quote || "Nejrychlejší cesta k domluvě."}</h2>
+          <p>{contact?.notes || "Stačí krátce napsat, co chceš posunout a jaký výsledek má dávat smysl."}</p>
+          <a className="primary-action" href={contact?.primaryCtaHref || "mailto:kontakt@david-kozak.com"}>
+            {contact?.primaryCtaLabel || "kontakt@david-kozak.com"}
           </a>
         </ElectricPanel>
 
         <div className="contact-notes">
-          <div>
-            <span>01</span>
-            <strong>Web nebo identita</strong>
-            <p>Nová prezentace, úprava směru nebo jasnější texty.</p>
-          </div>
-          <div>
-            <span>02</span>
-            <strong>Automatizace</strong>
-            <p>Jednodušší procesy a méně ruční práce.</p>
-          </div>
-          <div>
-            <span>03</span>
-            <strong>Digitální strategie</strong>
-            <p>Plán pro další verzi, veřejný projekt nebo pracovní plochu.</p>
-          </div>
+          {(contact?.objects ?? []).slice(0, 3).map((object) => (
+            <div key={object.id}>
+              <span>{object.label}</span>
+              <strong>{object.title}</strong>
+              <p>{object.text}</p>
+            </div>
+          ))}
         </div>
       </section>
     </SiteFrame>

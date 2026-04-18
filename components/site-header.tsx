@@ -11,10 +11,13 @@ import { dominantProjects, getProjectHost, navigationPages } from "@/resources/s
 export default function SiteHeader() {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+  const [isMenuHovered, setIsMenuHovered] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const isMatrixActive = isOpen || isMenuHovered
 
   useEffect(() => {
     setIsOpen(false)
+    setIsMenuHovered(false)
   }, [pathname])
 
   useEffect(() => {
@@ -46,13 +49,13 @@ export default function SiteHeader() {
         position="absolute"
         top="0"
         left="0"
-        height={16}
+        fill
         trigger="manual"
-        active={isOpen}
-        colors={["brand-solid-medium"]}
-        size={2}
-        spacing={3}
-        speed={0.82}
+        active={isMatrixActive}
+        colors={["brand-solid-medium", "accent-solid-medium"]}
+        size={3}
+        spacing={5}
+        speed={1.45}
         revealFrom="left"
         flicker
         reducedMotion="auto"
@@ -65,12 +68,15 @@ export default function SiteHeader() {
           <div
             ref={menuRef}
             className={isOpen ? "mega-menu is-open" : "mega-menu"}
+            onPointerEnter={() => setIsMenuHovered(true)}
+            onPointerLeave={() => setIsMenuHovered(false)}
             onFocusCapture={() => setIsOpen(true)}
             onBlurCapture={(event) => {
               const nextTarget = event.relatedTarget as Node | null
 
               if (!nextTarget || !event.currentTarget.contains(nextTarget)) {
                 setIsOpen(false)
+                setIsMenuHovered(false)
               }
             }}
           >

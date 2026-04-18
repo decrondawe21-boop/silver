@@ -22,10 +22,13 @@ import {
 } from "@once-ui-system/core"
 import { readStoredNews, writeStoredNews } from "@/lib/admin-news-storage"
 import {
+  defaultEditablePages,
   defaultHomeNews,
   editorSnippets,
   homepageSectionPlan,
   mysqlContentSchema,
+  type EditablePage,
+  type EditableSectionObject,
   type HomeNewsItem,
   type NewsStatus,
 } from "@/resources/admin-content"
@@ -36,6 +39,11 @@ import {
   writeStoredOwnerProfile,
   type OwnerProfile,
 } from "@/lib/admin-owner-storage"
+import {
+  readStoredEditablePages,
+  sanitizeEditablePages,
+  writeStoredEditablePages,
+} from "@/lib/admin-site-storage"
 import AdminSidebar6 from "@/components/admin-sidebar6"
 
 type NoticeTone = "success" | "warning" | "danger"
@@ -49,6 +57,12 @@ type AdminExportPackage = {
   exportedAt: string
   ownerProfile: OwnerProfile
   news: HomeNewsItem[]
+  pages: EditablePage[]
+}
+
+type SiteContentResponse = {
+  pages?: EditablePage[]
+  error?: string
 }
 
 const noticeVariants = {
@@ -188,6 +202,10 @@ function createDataDownload(content: string, filename: string, mimeType: string)
 
 export default function AdminContentStudio() {
   const [items, setItems] = useState<HomeNewsItem[]>(defaultHomeNews)
+  const [pages, setPages] = useState<EditablePage[]>(defaultEditablePages)
+  const [selectedPageId, setSelectedPageId] = useState(defaultEditablePages[0]?.id ?? "")
+  const [selectedSectionId, setSelectedSectionId] = useState(defaultEditablePages[0]?.sections[0]?.id ?? "")
+  const [isSavingPages, setIsSavingPages] = useState(false)
   const [ownerProfile, setOwnerProfile] = useState<OwnerProfile>(defaultOwnerProfile)
   const [draft, setDraft] = useState<HomeNewsItem>(() => emptyDraft())
   const [selectedId, setSelectedId] = useState<string>("new")
@@ -206,7 +224,226 @@ export default function AdminContentStudio() {
     }
 
     setOwnerProfile(readStoredOwnerProfile())
+    const localPages = readStoredEditablePages()
+    setPages(localPages)
+    setSelectedPageId(localPages[0]?.id ?? "")
+    setSelectedSectionId(localPages[0]?.sections[0]?.id ?? "")
+
+    const loadPagesFromDb = async () => {
+      try {
+        const response = await fetch("/api/admin/site-content", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        })
+        const payload = (await response.json()) as SiteContentResponse
+
+        if (!response.ok || !payload.pages) {
+          setNotice({
+            tone: "warning",
+            text: payload.error || "MySQL obsah webu se nepodařilo načíst. Používám lokální kopii.",
+          })
+          return
+        }
+
+        const dbPages = sanitizeEditablePages(payload.pages)
+        setPages(dbPages)
+        writeStoredEditablePages(dbPages)
+        setSelectedPageId(dbPages[0]?.id ?? "")
+        setSelectedSectionId(dbPages[0]?.sections[0]?.id ?? "")
+        setNotice({ tone: "success", text: "Mapa webu je načtená z MySQL." })
+      } catch {
+        setNotice({ tone: "warning", text: "MySQL obsah webu se nepodařilo načíst. Používám lokální kopii." })
+      }
+    }
+
+    void loadPagesFromDb()
   }, [])
+
+  const selectedPage = pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? defaultEditablePages[0]
+  const selectedSection =
+    selectedPage?.sections.find((section) => section.id === selectedSectionId) ??
+    selectedPage?.sections[0] ??
+    defaultEditablePages[0]?.sections[0]
+
+  const persistPages = async (nextPages: EditablePage[], message: string, tone: NoticeTone = "success") => {
+    const sanitized = sanitizeEditablePages(nextPages)
+    setPages(sanitized)
+    writeStoredEditablePages(sanitized)
+    setIsSavingPages(true)
+
+    try {
+      const response = await fetch("/api/admin/site-content", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pages: sanitized }),
+      })
+      const payload = (await response.json()) as SiteContentResponse
+
+      if (!response.ok || !payload.pages) {
+        setNotice({
+          tone: "danger",
+          text: payload.error || "Mapa stránek se nepodařila uložit do MySQL.",
+        })
+        return false
+      }
+
+      const dbPages = sanitizeEditablePages(payload.pages)
+      setPages(dbPages)
+      writeStoredEditablePages(dbPages)
+      setNotice({ tone, text: message })
+      return true
+    } catch {
+      setNotice({ tone: "danger", text: "Mapa stránek se nepodařila uložit do MySQL." })
+      return false
+    } finally {
+      setIsSavingPages(false)
+    }
+  }
+
+  const selectPage = (pageId: string) => {
+    const page = pages.find((candidate) => candidate.id === pageId)
+    if (!page) return
+
+    setSelectedPageId(page.id)
+    setSelectedSectionId(page.sections[0]?.id ?? "")
+    setNotice({ tone: "success", text: `Upravuji stránku: ${page.navLabel}` })
+  }
+
+  const selectSection = (sectionId: string) => {
+    const section = selectedPage?.sections.find((candidate) => candidate.id === sectionId)
+    if (!section) return
+
+    setSelectedSectionId(section.id)
+    setNotice({ tone: "success", text: `Upravuji sekci: ${section.label}` })
+  }
+
+  const updateSelectedPage = (field: keyof Omit<EditablePage, "sections">, value: string) => {
+    setPages((current) =>
+      current.map((page) => (page.id === selectedPage?.id ? { ...page, [field]: value } : page)),
+    )
+  }
+
+  const updateSelectedSection = (
+    field: keyof Omit<EditablePage["sections"][number], "objects">,
+    value: string,
+  ) => {
+    setPages((current) =>
+      current.map((page) =>
+        page.id === selectedPage?.id
+          ? {
+              ...page,
+              sections: page.sections.map((section) =>
+                section.id === selectedSection?.id ? { ...section, [field]: value } : section,
+              ),
+            }
+          : page,
+      ),
+    )
+  }
+
+  const updateSelectedObject = (objectId: string, field: keyof EditableSectionObject, value: string) => {
+    setPages((current) =>
+      current.map((page) =>
+        page.id === selectedPage?.id
+          ? {
+              ...page,
+              sections: page.sections.map((section) =>
+                section.id === selectedSection?.id
+                  ? {
+                      ...section,
+                      objects: section.objects.map((object) =>
+                        object.id === objectId ? { ...object, [field]: value } : object,
+                      ),
+                    }
+                  : section,
+              ),
+            }
+          : page,
+      ),
+    )
+  }
+
+  const saveEditablePages = async () => {
+    const normalized = sanitizeEditablePages(pages)
+    await persistPages(normalized, "Mapa stránek, sekcí a objektů je uložená v MySQL.")
+  }
+
+  const resetEditablePages = async () => {
+    await persistPages(defaultEditablePages, "Mapa stránek je vrácená na výchozí obsah v MySQL.", "warning")
+    setSelectedPageId(defaultEditablePages[0]?.id ?? "")
+    setSelectedSectionId(defaultEditablePages[0]?.sections[0]?.id ?? "")
+  }
+
+  const addSectionObject = () => {
+    if (!selectedPage || !selectedSection) return
+
+    const nextObject: EditableSectionObject = {
+      id: `object-${Date.now()}`,
+      label: "Nový objekt",
+      title: "",
+      text: "",
+      url: "",
+    }
+
+    const nextPages = pages.map((page) =>
+      page.id === selectedPage.id
+        ? {
+            ...page,
+            sections: page.sections.map((section) =>
+              section.id === selectedSection.id ? { ...section, objects: [...section.objects, nextObject] } : section,
+            ),
+          }
+        : page,
+    )
+
+    setPages(nextPages)
+    setNotice({ tone: "success", text: "Nový objekt je přidaný do sekce." })
+  }
+
+  const removeSectionObject = (objectId: string) => {
+    if (!selectedPage || !selectedSection) return
+
+    setPages((current) =>
+      current.map((page) =>
+        page.id === selectedPage.id
+          ? {
+              ...page,
+              sections: page.sections.map((section) =>
+                section.id === selectedSection.id
+                  ? { ...section, objects: section.objects.filter((object) => object.id !== objectId) }
+                  : section,
+              ),
+            }
+          : page,
+      ),
+    )
+    setNotice({ tone: "warning", text: "Objekt je odebraný ze sekce." })
+  }
+
+  const handleSectionImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith("image/")) {
+      setNotice({ tone: "danger", text: "Obrázek sekce musí být soubor typu image." })
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : ""
+      updateSelectedSection("imageUrl", result)
+      if (!selectedSection?.imageAlt) {
+        updateSelectedSection("imageAlt", file.name.replace(/\.[^.]+$/, ""))
+      }
+      setNotice({ tone: "success", text: "Obrázek sekce je načtený do editoru." })
+    }
+    reader.readAsDataURL(file)
+  }
 
   const mutateOwnerProfile = (
     updater: (current: OwnerProfile) => OwnerProfile,
@@ -446,6 +683,7 @@ export default function AdminContentStudio() {
         updatedAt: ownerProfile.updatedAt || new Date().toISOString(),
       },
       news: items,
+      pages,
     }
 
     createDataDownload(
@@ -473,18 +711,24 @@ export default function AdminContentStudio() {
 
         const parsedOwner = sanitizeOwnerProfile(parsed.ownerProfile)
         const parsedNews = sanitizeNewsCollection(parsed.news)
+        const parsedPages = sanitizeEditablePages(parsed.pages)
 
         setOwnerProfile(parsedOwner)
         writeStoredOwnerProfile(parsedOwner)
+        setPages(parsedPages)
+        writeStoredEditablePages(parsedPages)
+        void persistPages(parsedPages, "Importovaná mapa stránek je uložená v MySQL.")
+        setSelectedPageId(parsedPages[0]?.id ?? "")
+        setSelectedSectionId(parsedPages[0]?.sections[0]?.id ?? "")
 
         if (parsedNews && parsedNews.length > 0) {
           setItems(parsedNews)
           writeStoredNews(parsedNews)
           setSelectedId("new")
           setDraft(emptyDraft())
-          setNotice({ tone: "success", text: "Import proběhl: profil i aktuality jsou načtené." })
+          setNotice({ tone: "success", text: "Import proběhl: profil, stránky i aktuality jsou načtené." })
         } else {
-          setNotice({ tone: "success", text: "Import proběhl: profil majitele je načtený." })
+          setNotice({ tone: "success", text: "Import proběhl: profil a mapa stránek jsou načtené." })
         }
       } catch {
         setNotice({ tone: "danger", text: "Soubor se nepodařilo importovat. Ověř JSON formát exportu." })
@@ -568,6 +812,256 @@ export default function AdminContentStudio() {
         <Icon name={activeNotice.icon} size="s" />
         {notice.text}
       </Banner>
+
+      <Grid id="admin-pages" className="admin-layout-grid" gap="16" fillWidth style={{ gridTemplateColumns: "minmax(280px, 0.64fr) minmax(0, 1.36fr)" }}>
+        <aside className="admin-panel admin-list-panel" aria-label="Seznam stránek a sekcí">
+          <AdminTableBackground direction="left" />
+          <div className="admin-panel-heading">
+            <span>Stránky</span>
+            <h2>Page builder</h2>
+          </div>
+          {pages.map((page) => (
+            <div key={page.id} className="admin-page-nav-group">
+              <button
+                className={selectedPage?.id === page.id ? "admin-list-item is-active" : "admin-list-item"}
+                type="button"
+                onClick={() => selectPage(page.id)}
+              >
+                <strong>{page.navLabel}</strong>
+                <span>{page.path} · {page.sections.length} sekcí</span>
+              </button>
+              {selectedPage?.id === page.id ? (
+                <div className="admin-section-nav-list" aria-label={`Sekce stránky ${page.navLabel}`}>
+                  {page.sections.map((section) => (
+                    <button
+                      key={section.id}
+                      className={selectedSection?.id === section.id ? "admin-section-nav-item is-active" : "admin-section-nav-item"}
+                      type="button"
+                      onClick={() => selectSection(section.id)}
+                    >
+                      {section.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ))}
+          <Row gap="8" wrap>
+            <Button variant="primary" size="s" onClick={saveEditablePages} disabled={isSavingPages}>
+              {isSavingPages ? "Ukládám..." : "Uložit mapu webu"}
+            </Button>
+            <Button variant="secondary" size="s" onClick={resetEditablePages} disabled={isSavingPages}>
+              Vrátit výchozí
+            </Button>
+          </Row>
+        </aside>
+
+        <section className="admin-panel admin-page-editor-panel" aria-labelledby="page-editor-title">
+          <AdminTableBackground direction="right" />
+          <div className="admin-panel-heading admin-editor-heading">
+            <div>
+              <span>Pokročilé úpravy</span>
+              <h2 id="page-editor-title">{selectedPage?.navLabel ?? "Stránka"} · {selectedSection?.label ?? "Sekce"}</h2>
+            </div>
+            <Badge title={selectedPage?.path ?? "/"} icon="document" arrow={false} effect={false} />
+          </div>
+
+          <div className="admin-subpanel">
+            <div className="admin-panel-heading">
+              <span>Page metadata</span>
+              <h3>Navigace a SEO</h3>
+            </div>
+            <Grid className="admin-page-meta-grid" gap={14} fillWidth>
+              <Input
+                id="page-nav-label"
+                label="Název v navigaci"
+                value={selectedPage?.navLabel ?? ""}
+                onChange={(event) => updateSelectedPage("navLabel", event.target.value)}
+              />
+              <Input
+                id="page-path"
+                label="URL cesta"
+                value={selectedPage?.path ?? ""}
+                onChange={(event) => updateSelectedPage("path", event.target.value)}
+              />
+              <Input
+                id="page-meta-title"
+                label="Meta title"
+                value={selectedPage?.metaTitle ?? ""}
+                onChange={(event) => updateSelectedPage("metaTitle", event.target.value)}
+              />
+              <Input
+                id="page-meta-description"
+                label="Meta description"
+                value={selectedPage?.metaDescription ?? ""}
+                onChange={(event) => updateSelectedPage("metaDescription", event.target.value)}
+              />
+            </Grid>
+          </div>
+
+          <div className="admin-subpanel">
+            <div className="admin-panel-heading">
+              <span>Obsah sekce</span>
+              <h3>Texty, citát, CTA a obrázek</h3>
+            </div>
+            <Grid className="admin-page-meta-grid" gap={14} fillWidth>
+              <Input
+                id="section-label"
+                label="Interní název sekce"
+                value={selectedSection?.label ?? ""}
+                onChange={(event) => updateSelectedSection("label", event.target.value)}
+              />
+              <Input
+                id="section-eyebrow"
+                label="Eyebrow"
+                value={selectedSection?.eyebrow ?? ""}
+                onChange={(event) => updateSelectedSection("eyebrow", event.target.value)}
+              />
+              <Input
+                id="section-title"
+                label="Titulek"
+                value={selectedSection?.title ?? ""}
+                onChange={(event) => updateSelectedSection("title", event.target.value)}
+              />
+              <Input
+                id="section-quote"
+                label="Citát / motto"
+                value={selectedSection?.quote ?? ""}
+                onChange={(event) => updateSelectedSection("quote", event.target.value)}
+              />
+            </Grid>
+
+            <Textarea
+              id="section-text"
+              label="Hlavní text"
+              value={selectedSection?.text ?? ""}
+              onChange={(event) => updateSelectedSection("text", event.target.value)}
+              lines={5}
+              resize="vertical"
+            />
+
+            <Grid className="admin-page-meta-grid" gap={14} fillWidth>
+              <Input
+                id="section-primary-cta-label"
+                label="Primární CTA text"
+                value={selectedSection?.primaryCtaLabel ?? ""}
+                onChange={(event) => updateSelectedSection("primaryCtaLabel", event.target.value)}
+              />
+              <Input
+                id="section-primary-cta-href"
+                label="Primární CTA odkaz"
+                value={selectedSection?.primaryCtaHref ?? ""}
+                onChange={(event) => updateSelectedSection("primaryCtaHref", event.target.value)}
+              />
+              <Input
+                id="section-secondary-cta-label"
+                label="Sekundární CTA text"
+                value={selectedSection?.secondaryCtaLabel ?? ""}
+                onChange={(event) => updateSelectedSection("secondaryCtaLabel", event.target.value)}
+              />
+              <Input
+                id="section-secondary-cta-href"
+                label="Sekundární CTA odkaz"
+                value={selectedSection?.secondaryCtaHref ?? ""}
+                onChange={(event) => updateSelectedSection("secondaryCtaHref", event.target.value)}
+              />
+            </Grid>
+
+            <Grid className="admin-media-grid" fillWidth style={{ gridTemplateColumns: "minmax(0, 0.9fr) minmax(240px, 0.6fr)" }}>
+              <div className="admin-upload-zone">
+                <input id="section-image-file" type="file" accept="image/*" onChange={handleSectionImageUpload} />
+                <label htmlFor="section-image-file">
+                  <strong>Nahrát obrázek sekce</strong>
+                  <span>Pro preview a export. V produkci se později přepojí na Blob storage.</span>
+                </label>
+                <Input
+                  id="section-image-url"
+                  label="URL / cesta obrázku"
+                  value={selectedSection?.imageUrl ?? ""}
+                  onChange={(event) => updateSelectedSection("imageUrl", event.target.value)}
+                  placeholder="/image.png nebo data URL"
+                />
+                <Input
+                  id="section-image-alt"
+                  label="Alt text"
+                  value={selectedSection?.imageAlt ?? ""}
+                  onChange={(event) => updateSelectedSection("imageAlt", event.target.value)}
+                />
+              </div>
+              <div className="admin-image-preview">
+                {selectedSection?.imageUrl ? (
+                  <img src={selectedSection.imageUrl} alt={selectedSection.imageAlt || "Náhled obrázku sekce"} />
+                ) : (
+                  <span>Obrázek sekce</span>
+                )}
+              </div>
+            </Grid>
+
+            <Textarea
+              id="section-notes"
+              label="Interní poznámky"
+              value={selectedSection?.notes ?? ""}
+              onChange={(event) => updateSelectedSection("notes", event.target.value)}
+              lines={3}
+              resize="vertical"
+            />
+          </div>
+
+          <div className="admin-subpanel">
+            <div className="admin-panel-heading admin-editor-heading">
+              <div>
+                <span>Objekty v sekci</span>
+                <h3>Karty, body, odkazy a položky</h3>
+              </div>
+              <Button variant="secondary" size="s" onClick={addSectionObject}>
+                Přidat objekt
+              </Button>
+            </div>
+            <div className="admin-object-editor-list">
+              {(selectedSection?.objects ?? []).map((object) => (
+                <div key={object.id} className="admin-object-editor-card">
+                  <Grid className="admin-page-meta-grid" gap={12} fillWidth>
+                    <Input
+                      id={`${object.id}-label`}
+                      label="Label"
+                      value={object.label}
+                      onChange={(event) => updateSelectedObject(object.id, "label", event.target.value)}
+                    />
+                    <Input
+                      id={`${object.id}-title`}
+                      label="Název"
+                      value={object.title}
+                      onChange={(event) => updateSelectedObject(object.id, "title", event.target.value)}
+                    />
+                    <Input
+                      id={`${object.id}-url`}
+                      label="URL"
+                      value={object.url ?? ""}
+                      onChange={(event) => updateSelectedObject(object.id, "url", event.target.value)}
+                    />
+                  </Grid>
+                  <Textarea
+                    id={`${object.id}-text`}
+                    label="Popis"
+                    value={object.text}
+                    onChange={(event) => updateSelectedObject(object.id, "text", event.target.value)}
+                    lines={3}
+                    resize="vertical"
+                  />
+                  <Row horizontal="end">
+                    <Button variant="danger" size="s" onClick={() => removeSectionObject(object.id)}>
+                      Odebrat objekt
+                    </Button>
+                  </Row>
+                </div>
+              ))}
+              {(selectedSection?.objects.length ?? 0) === 0 ? (
+                <p className="admin-muted">Tahle sekce zatím nemá žádné opakovatelné objekty.</p>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      </Grid>
 
       <Grid className="admin-layout-grid" gap="16" fillWidth style={{ gridTemplateColumns: "minmax(280px, 0.68fr) minmax(0, 1.32fr)" }}>
         <aside id="admin-news-list" className="admin-panel admin-list-panel" aria-label="Seznam aktualit">

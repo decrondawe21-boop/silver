@@ -154,6 +154,12 @@ export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalI
           description: "Kam patří homepage bloky.",
         },
         {
+          sectionId: "admin-pages",
+          icon: "document",
+          label: "Stránky a sekce",
+          description: "Texty, citáty, CTA, objekty.",
+        },
+        {
           href: "/#aktuality",
           icon: "arrowUpRight",
           label: "Aktuality na webu",

@@ -1,9 +1,10 @@
 import "server-only"
 
 import { createHmac, timingSafeEqual } from "node:crypto"
-import mysql, { type RowDataPacket } from "mysql2/promise"
+import { type RowDataPacket } from "mysql2/promise"
 import { cookies } from "next/headers"
 
+import { getMysqlPool } from "@/lib/mysql"
 import type { AdminSession } from "@/lib/admin-session"
 
 type AdminRow = RowDataPacket & {
@@ -39,47 +40,12 @@ export const adminSessionCookieName = "silver_admin_session"
 const shortSessionTtlSeconds = 60 * 60 * 12
 const longSessionTtlSeconds = 60 * 60 * 24 * 30
 
-let pool: mysql.Pool | null = null
-
 function getSessionSecret() {
   const secret = process.env.ADMIN_SESSION_SECRET
   if (!secret || secret.length < 32) {
     throw new Error("ADMIN_SESSION_SECRET must be set and at least 32 characters long.")
   }
   return secret
-}
-
-function getMysqlPool() {
-  if (pool) return pool
-
-  const url = process.env.MYSQL_URL
-  if (url) {
-    pool = mysql.createPool({
-      uri: url,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-    })
-    return pool
-  }
-
-  const password = process.env.MYSQL_PASSWORD
-  if (!password) {
-    throw new Error("MYSQL_PASSWORD is required when MYSQL_URL is not set.")
-  }
-
-  pool = mysql.createPool({
-    host: process.env.MYSQL_HOST ?? "127.0.0.1",
-    port: Number(process.env.MYSQL_PORT ?? 3306),
-    user: process.env.MYSQL_USER ?? "personal_web_app",
-    password,
-    database: process.env.MYSQL_DATABASE ?? "personal_web",
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-  })
-
-  return pool
 }
 
 function getEnvAdminAccount(username: string): AdminAccount | null {
