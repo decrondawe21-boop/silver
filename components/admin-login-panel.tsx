@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react"
 import { useState } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { User } from "@once-ui-system/core/components/User"
 import { defaultAdminSession, type AdminSession, writeAdminSession } from "@/lib/admin-session"
@@ -67,7 +68,7 @@ export default function AdminLoginPanel() {
       <div className="login-panel-heading">
         <span>Administrace</span>
         <h2>Přihlášení</h2>
-        <p>Přihlášení je napojené na MySQL tabulku `admin_users`.</p>
+        <p>Přihlášení používá produkční admin účet a případně MySQL tabulku `admin_users`.</p>
       </div>
 
       <div className="login-user-preview">
@@ -116,7 +117,7 @@ export default function AdminLoginPanel() {
           />
           <span>Zapamatovat zařízení</span>
         </label>
-        <a href="mailto:kontakt@david-kozak.com">Obnovit přístup</a>
+        <Link href="/login/obnovit-pristup">Obnovit přístup</Link>
       </div>
 
       {errorMessage ? <p className="form-error-message">{errorMessage}</p> : null}

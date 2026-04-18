@@ -47,7 +47,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Neplatné přihlašovací údaje." }, { status: 401 })
     }
 
-    await updateAdminLastLogin(admin.id)
+    await updateAdminLastLogin(admin)
 
     const ttlSeconds = getSessionTtlSeconds(rememberDevice)
     const token = createSessionToken(admin.id, admin.username, ttlSeconds)

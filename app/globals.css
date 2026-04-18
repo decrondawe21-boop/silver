@@ -159,7 +159,7 @@ img {
   aspect-ratio: 1 / 1;
   pointer-events: none;
   isolation: isolate;
-  background: url("/great-life-background.png") center / contain no-repeat;
+  background: url("/accept-what-is-let-go.png") center / contain no-repeat;
   filter:
     invert(1)
     grayscale(1)
@@ -168,7 +168,7 @@ img {
     drop-shadow(0 0 26px rgba(255, 255, 255, 0.2))
     drop-shadow(0 0 70px rgba(169, 241, 214, 0.16));
   mix-blend-mode: screen;
-  opacity: var(--shadow-opacity-low);
+  opacity: 0.32;
   mask-image: radial-gradient(circle at 50% 50%, black 0 57%, transparent 86%);
   animation: shadow-breathe 12s ease-in-out infinite;
   will-change: transform, opacity;
@@ -1917,6 +1917,54 @@ h3 {
 .login-options a {
   color: rgba(169, 241, 214, 0.9);
   font-weight: 800;
+}
+
+.access-recovery-panel {
+  align-self: center;
+}
+
+.recovery-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 22px;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.recovery-steps li::marker {
+  color: rgba(169, 241, 214, 0.9);
+  font-weight: 900;
+}
+
+.recovery-command {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 14px;
+  background: rgba(5, 6, 7, 0.54);
+}
+
+.recovery-command span {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 12px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.recovery-command code {
+  max-width: 100%;
+  overflow-x: auto;
+  color: rgba(221, 255, 245, 0.9);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.access-recovery-actions {
+  justify-content: flex-start;
 }
 
 .form-error-message {

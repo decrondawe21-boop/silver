@@ -13,6 +13,14 @@ type AdminRow = RowDataPacket & {
   is_active: number
 }
 
+export type AdminAccount = {
+  id: number
+  username: string
+  password_hash: string
+  is_active: number
+  source: "env" | "mysql"
+}
+
 type SessionPayload = {
   adminId: number
   username: string
@@ -72,6 +80,23 @@ function getMysqlPool() {
   })
 
   return pool
+}
+
+function getEnvAdminAccount(username: string): AdminAccount | null {
+  const envUsername = process.env.ADMIN_USERNAME?.trim() || "admin"
+  const passwordHash = process.env.ADMIN_PASSWORD_HASH?.trim()
+
+  if (!passwordHash || username !== envUsername) {
+    return null
+  }
+
+  return {
+    id: 1,
+    username: envUsername,
+    password_hash: passwordHash,
+    is_active: 1,
+    source: "env",
+  }
 }
 
 function createInitials(value: string) {
@@ -169,45 +194,86 @@ export function buildAdminSession(username: string, signedInAt: string): AdminSe
 }
 
 export async function findAdminByUsername(username: string) {
-  const [rows] = await getMysqlPool().execute<AdminRow[]>(
-    `
-      SELECT id, username, password_hash, is_active
-      FROM admin_users
-      WHERE username = ? AND singleton = 1
-      LIMIT 1
-    `,
-    [username],
-  )
+  const envAdmin = getEnvAdminAccount(username)
+  if (envAdmin) {
+    return envAdmin
+  }
 
-  const admin = rows[0]
-  if (!admin || admin.is_active !== 1) return null
-  return admin
+  try {
+    const [rows] = await getMysqlPool().execute<AdminRow[]>(
+      `
+        SELECT id, username, password_hash, is_active
+        FROM admin_users
+        WHERE username = ? AND singleton = 1
+        LIMIT 1
+      `,
+      [username],
+    )
+
+    const admin = rows[0]
+    if (!admin || admin.is_active !== 1) return null
+
+    return {
+      ...admin,
+      source: "mysql" as const,
+    }
+  } catch (error) {
+    if (process.env.ADMIN_PASSWORD_HASH) {
+      console.error("MySQL admin lookup failed; env admin fallback was checked first.", error)
+      return null
+    }
+
+    throw error
+  }
 }
 
 async function findAdminById(adminId: number) {
-  const [rows] = await getMysqlPool().execute<AdminRow[]>(
-    `
-      SELECT id, username, password_hash, is_active
-      FROM admin_users
-      WHERE id = ? AND singleton = 1
-      LIMIT 1
-    `,
-    [adminId],
-  )
+  const envUsername = process.env.ADMIN_USERNAME?.trim() || "admin"
+  const envAdmin = getEnvAdminAccount(envUsername)
+  if (envAdmin && adminId === envAdmin.id) {
+    return envAdmin
+  }
 
-  const admin = rows[0]
-  if (!admin || admin.is_active !== 1) return null
-  return admin
+  try {
+    const [rows] = await getMysqlPool().execute<AdminRow[]>(
+      `
+        SELECT id, username, password_hash, is_active
+        FROM admin_users
+        WHERE id = ? AND singleton = 1
+        LIMIT 1
+      `,
+      [adminId],
+    )
+
+    const admin = rows[0]
+    if (!admin || admin.is_active !== 1) return null
+
+    return {
+      ...admin,
+      source: "mysql" as const,
+    }
+  } catch (error) {
+    if (process.env.ADMIN_PASSWORD_HASH) {
+      console.error("MySQL admin session lookup failed; env admin fallback was checked first.", error)
+      return null
+    }
+
+    throw error
+  }
 }
 
-export async function updateAdminLastLogin(adminId: number) {
+export async function updateAdminLastLogin(admin: AdminAccount) {
+  if (admin.source === "env") {
+    return
+  }
+
   await getMysqlPool().execute(
     `
       UPDATE admin_users
       SET last_login_at = CURRENT_TIMESTAMP
       WHERE id = ? AND singleton = 1
     `,
-    [adminId],
+    [admin.id],
   )
 }
 
