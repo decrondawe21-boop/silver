@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from "react"
 import { startTransition, useDeferredValue, useEffect, useState } from "react"
+import Cropper, { type Area, type Point } from "react-easy-crop"
 import {
   AccordionGroup,
   Background,
@@ -396,8 +397,18 @@ export default function AdminContentStudio() {
     }
   }
 
-  const updateAd = (adId: string, field: keyof Omit<FooterAd, "id">, value: string | boolean) => {
+  const updateAd = (adId: string, field: keyof Omit<FooterAd, "id">, value: string | boolean | number) => {
     setAds((current) => current.map((ad) => (ad.id === adId ? { ...ad, [field]: value } : ad)))
+  }
+
+  const updateAdCrop = (adId: string, crop: Point) => {
+    setAds((current) => current.map((ad) => (ad.id === adId ? { ...ad, cropX: crop.x, cropY: crop.y } : ad)))
+  }
+
+  const updateAdCropComplete = (adId: string, croppedArea: Area) => {
+    const centerX = Math.min(100, Math.max(0, croppedArea.x + croppedArea.width / 2))
+    const centerY = Math.min(100, Math.max(0, croppedArea.y + croppedArea.height / 2))
+    updateAd(adId, "objectPosition", `${Math.round(centerX)}% ${Math.round(centerY)}%`)
   }
 
   const addAd = () => {
@@ -411,6 +422,9 @@ export default function AdminContentStudio() {
         imageAlt: "Reklamní banner",
         mediaType: "image",
         objectPosition: "50% 50%",
+        mediaZoom: 1,
+        cropX: 0,
+        cropY: 0,
         visible: false,
       },
     ])
@@ -1461,23 +1475,39 @@ export default function AdminContentStudio() {
                     Video
                   </Button>
                 </Row>
-                <div className="admin-ad-preview">
-                  {ad.imageUrl && ad.mediaType === "video" ? (
-                    <video
-                      src={ad.imageUrl}
-                      aria-label={ad.imageAlt || ad.title}
-                      autoPlay
-                      muted
-                      playsInline
-                      preload="metadata"
-                      style={{ objectPosition: ad.objectPosition || "50% 50%" }}
+                <div className="admin-ad-cropper" aria-label={`Ořez reklamy ${ad.title}`}>
+                  {ad.imageUrl ? (
+                    <Cropper
+                      image={ad.mediaType === "image" ? ad.imageUrl : undefined}
+                      video={ad.mediaType === "video" ? ad.imageUrl : undefined}
+                      crop={{ x: ad.cropX || 0, y: ad.cropY || 0 }}
+                      zoom={ad.mediaZoom || 1}
+                      aspect={16 / 7}
+                      minZoom={1}
+                      maxZoom={3}
+                      cropShape="rect"
+                      showGrid
+                      objectFit="cover"
+                      onCropChange={(crop) => updateAdCrop(ad.id, crop)}
+                      onCropComplete={(croppedArea) => updateAdCropComplete(ad.id, croppedArea)}
+                      onZoomChange={(zoom) => updateAd(ad.id, "mediaZoom", zoom)}
+                      mediaProps={ad.mediaType === "video" ? { muted: true, autoPlay: true, playsInline: true } : undefined}
                     />
-                  ) : null}
-                  {ad.imageUrl && ad.mediaType !== "video" ? (
-                    <img src={ad.imageUrl} alt={ad.imageAlt || ad.title} style={{ objectPosition: ad.objectPosition || "50% 50%" }} />
-                  ) : null}
-                  {!ad.imageUrl ? <span>Bez média</span> : null}
+                  ) : (
+                    <span>Bez média</span>
+                  )}
                 </div>
+                <label className="admin-zoom-control">
+                  Zoom: {(ad.mediaZoom || 1).toFixed(1)}x
+                  <input
+                    type="range"
+                    min="1"
+                    max="3"
+                    step="0.05"
+                    value={ad.mediaZoom || 1}
+                    onChange={(event) => updateAd(ad.id, "mediaZoom", Number(event.target.value))}
+                  />
+                </label>
               </div>
             ))}
           </div>

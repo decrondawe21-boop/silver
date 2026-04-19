@@ -2613,27 +2613,36 @@ button.admin-sidebar6-link {
   opacity: 0.68;
 }
 
-.admin-ad-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 180px;
+.admin-ad-cropper {
+  position: relative;
+  min-height: 260px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-ad-cropper > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
   color: rgba(255, 255, 255, 0.5);
   font-size: 13px;
   font-weight: 760;
 }
 
-.admin-ad-preview img,
-.admin-ad-preview video {
+.admin-zoom-control {
+  display: grid;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.admin-zoom-control input {
   width: 100%;
-  height: 320px;
-  max-height: 320px;
-  object-fit: cover;
-  background: rgba(255, 255, 255, 0.94);
+  accent-color: rgba(169, 241, 214, 0.92);
 }
 
 .admin-position-presets {

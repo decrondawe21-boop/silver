@@ -14,6 +14,11 @@ export default async function SiteFooter() {
   }
 
   const visibleFooterAds = getVisibleFooterAds(footerAds)
+  const getMediaStyle = (ad: (typeof visibleFooterAds)[number]) => ({
+    objectPosition: ad.objectPosition,
+    transform: `scale(${ad.mediaZoom || 1})`,
+    transformOrigin: ad.objectPosition,
+  })
 
   return (
     <footer className="site-footer" aria-label="Patička webu">
@@ -49,7 +54,7 @@ export default async function SiteFooter() {
                   muted
                   playsInline
                   preload="metadata"
-                  style={{ objectPosition: ad.objectPosition }}
+                  style={getMediaStyle(ad)}
                 />
               ) : (
                 <img
@@ -57,7 +62,7 @@ export default async function SiteFooter() {
                   alt={ad.imageAlt}
                   loading="lazy"
                   decoding="async"
-                  style={{ objectPosition: ad.objectPosition }}
+                  style={getMediaStyle(ad)}
                 />
               )}
             </a>

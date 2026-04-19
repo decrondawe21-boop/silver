@@ -6,6 +6,9 @@ export type FooterAd = {
   imageAlt: string
   mediaType: "image" | "video"
   objectPosition: string
+  mediaZoom: number
+  cropX: number
+  cropY: number
   visible: boolean
 }
 
@@ -18,6 +21,9 @@ export const defaultFooterAds: FooterAd[] = [
     imageAlt: "Repas Mobile reklama na repasované telefony",
     mediaType: "image",
     objectPosition: "50% 50%",
+    mediaZoom: 1,
+    cropX: 0,
+    cropY: 0,
     visible: true,
   },
   {
@@ -28,6 +34,9 @@ export const defaultFooterAds: FooterAd[] = [
     imageAlt: "F-Studio reklama s grafem růstu",
     mediaType: "image",
     objectPosition: "50% 50%",
+    mediaZoom: 1,
+    cropX: 0,
+    cropY: 0,
     visible: true,
   },
   {
@@ -38,6 +47,9 @@ export const defaultFooterAds: FooterAd[] = [
     imageAlt: "Restart Integrace video reklama",
     mediaType: "video",
     objectPosition: "50% 50%",
+    mediaZoom: 1,
+    cropX: 0,
+    cropY: 0,
     visible: true,
   },
   {
@@ -48,6 +60,9 @@ export const defaultFooterAds: FooterAd[] = [
     imageAlt: "Font Banner - Free Fonts",
     mediaType: "image",
     objectPosition: "50% 50%",
+    mediaZoom: 1,
+    cropX: 0,
+    cropY: 0,
     visible: true,
   },
 ]
@@ -73,6 +88,9 @@ function sanitizeAd(candidate: unknown): FooterAd | null {
     mediaType: record.mediaType === "video" || imageUrl.toLowerCase().endsWith(".mp4") ? "video" : "image",
     objectPosition:
       typeof record.objectPosition === "string" && record.objectPosition.trim() ? record.objectPosition.trim() : "50% 50%",
+    mediaZoom: typeof record.mediaZoom === "number" && Number.isFinite(record.mediaZoom) ? record.mediaZoom : 1,
+    cropX: typeof record.cropX === "number" && Number.isFinite(record.cropX) ? record.cropX : 0,
+    cropY: typeof record.cropY === "number" && Number.isFinite(record.cropY) ? record.cropY : 0,
     visible: record.visible !== false,
   }
 }
