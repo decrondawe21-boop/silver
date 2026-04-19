@@ -5,6 +5,7 @@ export type FooterAd = {
   imageUrl: string
   imageAlt: string
   mediaType: "image" | "video"
+  objectPosition: string
   visible: boolean
 }
 
@@ -16,6 +17,7 @@ export const defaultFooterAds: FooterAd[] = [
     imageUrl: "/ads/repas-mobile-ad.png",
     imageAlt: "Repas Mobile reklama na repasované telefony",
     mediaType: "image",
+    objectPosition: "50% 50%",
     visible: true,
   },
   {
@@ -25,6 +27,7 @@ export const defaultFooterAds: FooterAd[] = [
     imageUrl: "/ads/f-studio-growth-ad.png",
     imageAlt: "F-Studio reklama s grafem růstu",
     mediaType: "image",
+    objectPosition: "50% 50%",
     visible: true,
   },
   {
@@ -34,6 +37,7 @@ export const defaultFooterAds: FooterAd[] = [
     imageUrl: "/ads/restart-integrace-ad.mp4",
     imageAlt: "Restart Integrace video reklama",
     mediaType: "video",
+    objectPosition: "50% 50%",
     visible: true,
   },
   {
@@ -43,6 +47,7 @@ export const defaultFooterAds: FooterAd[] = [
     imageUrl: "https://www.creativefabrica.com/wp-content/uploads/2018/01/freebie-banners3-party-04.png",
     imageAlt: "Font Banner - Free Fonts",
     mediaType: "image",
+    objectPosition: "50% 50%",
     visible: true,
   },
 ]
@@ -66,6 +71,8 @@ function sanitizeAd(candidate: unknown): FooterAd | null {
     imageUrl,
     imageAlt: typeof record.imageAlt === "string" && record.imageAlt.trim() ? record.imageAlt.trim() : title,
     mediaType: record.mediaType === "video" || imageUrl.toLowerCase().endsWith(".mp4") ? "video" : "image",
+    objectPosition:
+      typeof record.objectPosition === "string" && record.objectPosition.trim() ? record.objectPosition.trim() : "50% 50%",
     visible: record.visible !== false,
   }
 }

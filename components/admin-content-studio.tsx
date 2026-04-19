@@ -133,9 +133,18 @@ const emptyDraft = (): HomeNewsItem => ({
   date: "",
   status: "draft",
   imageAlt: "",
+  imagePosition: "50% 50%",
   content: "",
   codeSnippet: "",
 })
+
+const mediaPositionPresets = [
+  { label: "Střed", value: "50% 50%" },
+  { label: "Nahoře", value: "50% 18%" },
+  { label: "Dole", value: "50% 82%" },
+  { label: "Vlevo", value: "18% 50%" },
+  { label: "Vpravo", value: "82% 50%" },
+] as const
 
 function createNewsId() {
   return `news-${Date.now()}`
@@ -186,6 +195,10 @@ function sanitizeNewsCollection(value: unknown) {
       status: candidate.status === "published" ? "published" : "draft",
       imageDataUrl: typeof candidate.imageDataUrl === "string" ? candidate.imageDataUrl : undefined,
       imageAlt: typeof candidate.imageAlt === "string" ? candidate.imageAlt : undefined,
+      imagePosition:
+        typeof candidate.imagePosition === "string" && candidate.imagePosition.trim()
+          ? candidate.imagePosition.trim()
+          : "50% 50%",
       content: typeof candidate.content === "string" && candidate.content.trim() ? candidate.content.trim() : excerpt,
       codeSnippet: typeof candidate.codeSnippet === "string" ? candidate.codeSnippet : undefined,
     })
@@ -397,6 +410,7 @@ export default function AdminContentStudio() {
         imageUrl: "",
         imageAlt: "Reklamní banner",
         mediaType: "image",
+        objectPosition: "50% 50%",
         visible: false,
       },
     ])
@@ -1282,10 +1296,28 @@ export default function AdminContentStudio() {
                 onChange={(event) => updateDraft("imageAlt", event.target.value)}
                 placeholder="Popis obrázku pro přístupnost"
               />
+              <Input
+                id="news-image-position"
+                label="Pozice náhledu"
+                value={draft.imagePosition || "50% 50%"}
+                onChange={(event) => updateDraft("imagePosition", event.target.value)}
+                placeholder="50% 50%"
+              />
+              <div className="admin-position-presets" aria-label="Rychlá pozice obrázku aktuality">
+                {mediaPositionPresets.map((preset) => (
+                  <button key={preset.value} type="button" onClick={() => updateDraft("imagePosition", preset.value)}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="admin-image-preview">
               {draft.imageDataUrl ? (
-                <img src={draft.imageDataUrl} alt={draft.imageAlt || "Náhled nahraného obrázku"} />
+                <img
+                  src={draft.imageDataUrl}
+                  alt={draft.imageAlt || "Náhled nahraného obrázku"}
+                  style={{ objectPosition: draft.imagePosition || "50% 50%" }}
+                />
               ) : (
                 <span>Preview obrázku</span>
               )}
@@ -1398,7 +1430,21 @@ export default function AdminContentStudio() {
                     value={ad.imageAlt}
                     onChange={(event) => updateAd(ad.id, "imageAlt", event.target.value)}
                   />
+                  <Input
+                    id={`${ad.id}-position`}
+                    label="Pozice náhledu"
+                    value={ad.objectPosition || "50% 50%"}
+                    onChange={(event) => updateAd(ad.id, "objectPosition", event.target.value)}
+                    placeholder="50% 50%"
+                  />
                 </Grid>
+                <div className="admin-position-presets" aria-label={`Rychlá pozice reklamy ${ad.title}`}>
+                  {mediaPositionPresets.map((preset) => (
+                    <button key={preset.value} type="button" onClick={() => updateAd(ad.id, "objectPosition", preset.value)}>
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
                 <Row gap="8" wrap>
                   <Button
                     variant={ad.mediaType === "image" ? "primary" : "secondary"}
@@ -1417,10 +1463,18 @@ export default function AdminContentStudio() {
                 </Row>
                 <div className="admin-ad-preview">
                   {ad.imageUrl && ad.mediaType === "video" ? (
-                    <video src={ad.imageUrl} aria-label={ad.imageAlt || ad.title} autoPlay muted playsInline preload="metadata" />
+                    <video
+                      src={ad.imageUrl}
+                      aria-label={ad.imageAlt || ad.title}
+                      autoPlay
+                      muted
+                      playsInline
+                      preload="metadata"
+                      style={{ objectPosition: ad.objectPosition || "50% 50%" }}
+                    />
                   ) : null}
                   {ad.imageUrl && ad.mediaType !== "video" ? (
-                    <img src={ad.imageUrl} alt={ad.imageAlt || ad.title} />
+                    <img src={ad.imageUrl} alt={ad.imageAlt || ad.title} style={{ objectPosition: ad.objectPosition || "50% 50%" }} />
                   ) : null}
                   {!ad.imageUrl ? <span>Bez média</span> : null}
                 </div>
@@ -1585,7 +1639,11 @@ export default function AdminContentStudio() {
           </div>
           <article className="news-card admin-preview-card">
             <div className="news-card-image">
-              {draft.imageDataUrl ? <img src={draft.imageDataUrl} alt={draft.imageAlt || ""} /> : <span>{draft.category || "Aktualita"}</span>}
+              {draft.imageDataUrl ? (
+                <img src={draft.imageDataUrl} alt={draft.imageAlt || ""} style={{ objectPosition: draft.imagePosition || "50% 50%" }} />
+              ) : (
+                <span>{draft.category || "Aktualita"}</span>
+              )}
             </div>
             <div className="news-card-copy">
               <span>{draft.category || "Aktualita"} · {draft.date}</span>

@@ -2630,9 +2630,37 @@ button.admin-sidebar6-link {
 .admin-ad-preview img,
 .admin-ad-preview video {
   width: 100%;
+  height: 320px;
   max-height: 320px;
-  object-fit: contain;
+  object-fit: cover;
   background: rgba(255, 255, 255, 0.94);
+}
+
+.admin-position-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-position-presets button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.74);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.admin-position-presets button:hover,
+.admin-position-presets button:focus-visible {
+  border-color: rgba(169, 241, 214, 0.36);
+  background: rgba(169, 241, 214, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  outline: none;
 }
 
 .admin-owner-avatar-preview {

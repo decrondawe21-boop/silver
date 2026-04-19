@@ -42,9 +42,23 @@ export default async function SiteFooter() {
               key={ad.id}
             >
               {ad.mediaType === "video" ? (
-                <video src={ad.imageUrl} aria-label={ad.imageAlt} autoPlay muted playsInline preload="metadata" />
+                <video
+                  src={ad.imageUrl}
+                  aria-label={ad.imageAlt}
+                  autoPlay
+                  muted
+                  playsInline
+                  preload="metadata"
+                  style={{ objectPosition: ad.objectPosition }}
+                />
               ) : (
-                <img src={ad.imageUrl} alt={ad.imageAlt} loading="lazy" decoding="async" />
+                <img
+                  src={ad.imageUrl}
+                  alt={ad.imageAlt}
+                  loading="lazy"
+                  decoding="async"
+                  style={{ objectPosition: ad.objectPosition }}
+                />
               )}
             </a>
           ))}

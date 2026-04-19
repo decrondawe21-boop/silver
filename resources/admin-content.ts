@@ -9,6 +9,7 @@ export type HomeNewsItem = {
   status: NewsStatus
   imageDataUrl?: string
   imageAlt?: string
+  imagePosition?: string
   content: string
   codeSnippet?: string
 }

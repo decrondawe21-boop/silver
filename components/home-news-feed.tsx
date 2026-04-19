@@ -17,7 +17,11 @@ export default function HomeNewsFeed({ defaultItems }: { defaultItems: HomeNewsI
       {items.slice(0, 3).map((item) => (
         <article id={`novinka-${item.id}`} className="news-card" key={item.id}>
           <div className="news-card-image">
-            {item.imageDataUrl ? <img src={item.imageDataUrl} alt={item.imageAlt || ""} /> : <span>{item.category}</span>}
+            {item.imageDataUrl ? (
+              <img src={item.imageDataUrl} alt={item.imageAlt || ""} style={{ objectPosition: item.imagePosition || "50% 50%" }} />
+            ) : (
+              <span>{item.category}</span>
+            )}
           </div>
           <div className="news-card-copy">
             <span>
