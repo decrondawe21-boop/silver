@@ -1,8 +1,20 @@
 import Link from "next/link"
 import FooterWeatherMark from "@/components/footer-weather-mark"
+import { readFooterAdsFromDb } from "@/lib/site-ads-db"
+import { defaultFooterAds, getVisibleFooterAds } from "@/resources/advertisements"
 import { dominantProjects, navigationPages } from "@/resources/site-content"
 
-export default function SiteFooter() {
+export default async function SiteFooter() {
+  let footerAds = defaultFooterAds
+
+  try {
+    footerAds = await readFooterAdsFromDb()
+  } catch {
+    footerAds = defaultFooterAds
+  }
+
+  const visibleFooterAds = getVisibleFooterAds(footerAds)
+
   return (
     <footer className="site-footer" aria-label="Patička webu">
       <FooterWeatherMark />
@@ -19,20 +31,20 @@ export default function SiteFooter() {
 
       <aside className="footer-ad-slot" aria-label="Reklamní prostor">
         <span>Reklama</span>
-        <a
-          className="footer-ad-card"
-          href="https://www.creativefabrica.com/freebies/free-fonts/ref/17041091/"
-          title="Font Banner - Free Fonts"
-          target="_blank"
-          rel="sponsored noopener"
-        >
-          <img
-            src="https://www.creativefabrica.com/wp-content/uploads/2018/01/freebie-banners3-party-04.png"
-            alt="Font Banner - Free Fonts"
-            loading="lazy"
-            decoding="async"
-          />
-        </a>
+        <div className="footer-ad-list">
+          {visibleFooterAds.map((ad) => (
+            <a
+              className="footer-ad-card"
+              href={ad.href}
+              title={ad.title}
+              target="_blank"
+              rel="sponsored noopener"
+              key={ad.id}
+            >
+              <img src={ad.imageUrl} alt={ad.imageAlt} loading="lazy" decoding="async" />
+            </a>
+          ))}
+        </div>
       </aside>
 
       <div className="footer-grid">

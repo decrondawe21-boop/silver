@@ -25,7 +25,7 @@ export async function GET() {
     return NextResponse.json({ pages })
   } catch (error) {
     console.error("Failed to read site content:", error)
-    return NextResponse.json({ error: "Obsah webu se nepodařilo načíst z MySQL." }, { status: 500 })
+    return NextResponse.json({ error: "Obsah webu se nepodařilo načíst ze Supabase." }, { status: 500 })
   }
 }
 
@@ -47,7 +47,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ pages })
   } catch (error) {
     console.error("Failed to save site content:", error)
-    return NextResponse.json({ error: "Obsah webu se nepodařilo uložit do MySQL." }, { status: 500 })
+    return NextResponse.json({ error: "Obsah webu se nepodařilo uložit do Supabase." }, { status: 500 })
   }
 }
 
@@ -61,6 +61,6 @@ export async function POST() {
     return NextResponse.json({ pages })
   } catch (error) {
     console.error("Failed to refresh site content:", error)
-    return NextResponse.json({ error: "Obsah webu se nepodařilo obnovit z MySQL." }, { status: 500 })
+    return NextResponse.json({ error: "Obsah webu se nepodařilo obnovit ze Supabase." }, { status: 500 })
   }
 }

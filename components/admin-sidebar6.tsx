@@ -13,17 +13,30 @@ import {
 } from "@/lib/admin-session"
 
 type AdminSidebar6Props = {
+  activePanel: AdminPanelId
   activeDraftTitle: string
+  onSelectPanel: (panelId: AdminPanelId) => void
   publishedItems: number
   totalItems: number
 }
+
+export type AdminPanelId =
+  | "overview"
+  | "pages"
+  | "news"
+  | "ads"
+  | "owner"
+  | "data"
+  | "preview"
+  | "database"
+  | "structure"
 
 type SidebarLink = {
   description: string
   icon: string
   label: string
   href?: string
-  sectionId?: string
+  panelId?: AdminPanelId
   meta?: string
 }
 
@@ -37,10 +50,11 @@ function SidebarTitle({ icon, label }: { icon: string; label: string }) {
 }
 
 type SidebarLinkItemProps = SidebarLink & {
-  onNavigateSection: (sectionId: string) => void
+  activePanel: AdminPanelId
+  onSelectPanel: (panelId: AdminPanelId) => void
 }
 
-function SidebarLinkItem({ description, href, icon, label, meta, onNavigateSection, sectionId }: SidebarLinkItemProps) {
+function SidebarLinkItem({ activePanel, description, href, icon, label, meta, onSelectPanel, panelId }: SidebarLinkItemProps) {
   const body = (
     <>
       <span>
@@ -52,9 +66,14 @@ function SidebarLinkItem({ description, href, icon, label, meta, onNavigateSecti
     </>
   )
 
-  if (sectionId) {
+  if (panelId) {
     return (
-      <button className="admin-sidebar6-link" type="button" onClick={() => onNavigateSection(sectionId)}>
+      <button
+        className={activePanel === panelId ? "admin-sidebar6-link is-active" : "admin-sidebar6-link"}
+        type="button"
+        onClick={() => onSelectPanel(panelId)}
+        aria-current={activePanel === panelId ? "page" : undefined}
+      >
         {body}
       </button>
     )
@@ -67,7 +86,13 @@ function SidebarLinkItem({ description, href, icon, label, meta, onNavigateSecti
   )
 }
 
-export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalItems }: AdminSidebar6Props) {
+export default function AdminSidebar6({
+  activePanel,
+  activeDraftTitle,
+  onSelectPanel,
+  publishedItems,
+  totalItems,
+}: AdminSidebar6Props) {
   const router = useRouter()
   const [session, setSession] = useState<AdminSession>(defaultAdminSession)
   const draftTitle = activeDraftTitle.trim() || "Nový příspěvek"
@@ -102,45 +127,34 @@ export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalI
     router.refresh()
   }
 
-  const navigateToSection = (sectionId: string) => {
-    const target = document.getElementById(sectionId)
-    if (!target) return
-
-    target.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    })
-  }
-
   const navGroups: Array<{ title: ReactNode; links: SidebarLink[] }> = [
     {
-      title: <SidebarTitle icon="document" label="Obsah" />,
+      title: <SidebarTitle icon="document" label="Pracovní plocha" />,
       links: [
         {
-          sectionId: "admin-editor",
+          panelId: "overview",
+          icon: "radialGauge",
+          label: "Přehled",
+          description: "Stav obsahu a rychlá orientace.",
+        },
+        {
+          panelId: "news",
           icon: "wordmark",
-          label: "Editor aktuality",
-          description: "Text, stav, datum a publikace.",
+          label: "Aktuality",
+          description: "Editor, upload a fronta příspěvků.",
           meta: draftTitle,
         },
         {
-          sectionId: "admin-upload",
-          icon: "plus",
-          label: "Nahrávání obrázků",
-          description: "Preview uploadu a alt text.",
-        },
-        {
-          sectionId: "admin-news-list",
-          icon: "clipboard",
-          label: "Fronta příspěvků",
-          description: "Vybrat existující aktualitu.",
-          meta: `${totalItems} položek`,
-        },
-        {
-          sectionId: "admin-preview",
+          panelId: "preview",
           icon: "eye",
           label: "Náhled",
           description: "Kontrola karty před publikací.",
+        },
+        {
+          panelId: "ads",
+          icon: "plus",
+          label: "Reklama",
+          description: "Vkládání, úpravy a viditelnost.",
         },
       ],
     },
@@ -148,16 +162,16 @@ export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalI
       title: <SidebarTitle icon="world" label="Homepage" />,
       links: [
         {
-          sectionId: "admin-sections",
-          icon: "chevronsLeftRight",
-          label: "Mapa sekcí",
-          description: "Kam patří homepage bloky.",
-        },
-        {
-          sectionId: "admin-pages",
+          panelId: "pages",
           icon: "document",
           label: "Stránky a sekce",
           description: "Texty, citáty, CTA, objekty.",
+        },
+        {
+          panelId: "structure",
+          icon: "chevronsLeftRight",
+          label: "Mapa sekcí",
+          description: "Kam patří homepage bloky.",
         },
         {
           href: "/#aktuality",
@@ -178,21 +192,15 @@ export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalI
       title: <SidebarTitle icon="security" label="Systém" />,
       links: [
         {
-          sectionId: "admin-owner",
-          icon: "person",
-          label: "Profil majitele",
-          description: "Jméno, bio, kontakt, avatar.",
-        },
-        {
-          sectionId: "admin-data",
+          panelId: "data",
           icon: "document",
           label: "Import / export",
           description: "Upload, stahování a obnova dat.",
         },
         {
-          sectionId: "admin-mysql",
+          panelId: "database",
           icon: "radialGauge",
-          label: "MySQL návrh",
+          label: "Supabase",
           description: "Schéma pro produkční data.",
         },
         {
@@ -235,7 +243,12 @@ export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalI
           content: (
             <Column gap="8" fillWidth>
               {group.links.map((link) => (
-                <SidebarLinkItem key={`${link.label}-${link.href ?? link.sectionId}`} {...link} onNavigateSection={navigateToSection} />
+                <SidebarLinkItem
+                  key={`${link.label}-${link.href ?? link.panelId}`}
+                  {...link}
+                  activePanel={activePanel}
+                  onSelectPanel={onSelectPanel}
+                />
               ))}
             </Column>
           ),
@@ -252,8 +265,8 @@ export default function AdminSidebar6({ activeDraftTitle, publishedItems, totalI
           {session.email}
         </Text>
         <Row className="admin-sidebar6-actions" gap="8" fillWidth>
-          <Button href="/dashboard" variant="secondary" size="s" fillWidth>
-            Dashboard
+          <Button variant="secondary" size="s" fillWidth onClick={() => onSelectPanel("owner")}>
+            Upravit profil
           </Button>
           <Button variant="danger" size="s" fillWidth onClick={logout}>
             Odhlásit

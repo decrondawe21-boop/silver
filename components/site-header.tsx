@@ -1,12 +1,33 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ChevronDown, LayoutGrid } from "lucide-react"
+import {
+  BriefcaseBusiness,
+  ChevronDown,
+  ExternalLink,
+  FolderOpen,
+  Gauge,
+  Home,
+  LayoutGrid,
+  LogIn,
+  Mail,
+  MessageSquare,
+  UserRound,
+  Wrench,
+} from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { MatrixFx } from "@once-ui-system/core/components/MatrixFx"
 import UserAccountMenu from "@/components/user-account-menu"
 import { dominantProjects, getProjectHost, navigationPages } from "@/resources/site-content"
+
+function getNavigationIcon(href: string) {
+  if (href === "/profil") return UserRound
+  if (href === "/sluzby") return Wrench
+  if (href === "/projekty") return FolderOpen
+  if (href === "/kontakt") return Mail
+  return BriefcaseBusiness
+}
 
 export default function SiteHeader() {
   const pathname = usePathname()
@@ -112,26 +133,39 @@ export default function SiteHeader() {
               <div className="mega-column mega-column-main">
                 <span className="mega-label">Stránky</span>
                 <Link className={pathname === "/" ? "mega-link is-active" : "mega-link"} href="/" onClick={() => setIsOpen(false)}>
-                  <strong>Domů</strong>
+                  <strong>
+                    <Home className="mega-link-icon" size={16} strokeWidth={2.1} aria-hidden="true" />
+                    Domů
+                  </strong>
                   <span>Úvod, matrix, profil a rychlý přehled.</span>
                 </Link>
-                {navigationPages.map((item) => (
-                  <Link
-                    key={item.href}
-                    className={pathname === item.href ? "mega-link is-active" : "mega-link"}
-                    href={item.href}
-                    onClick={() => setIsOpen(false)}
-                  >
-                    <strong>{item.label}</strong>
-                    <span>{item.description}</span>
-                  </Link>
-                ))}
+                {navigationPages.map((item) => {
+                  const NavigationIcon = getNavigationIcon(item.href)
+
+                  return (
+                    <Link
+                      key={item.href}
+                      className={pathname === item.href ? "mega-link is-active" : "mega-link"}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <strong>
+                        <NavigationIcon className="mega-link-icon" size={16} strokeWidth={2.1} aria-hidden="true" />
+                        {item.label}
+                      </strong>
+                      <span>{item.description}</span>
+                    </Link>
+                  )
+                })}
               </div>
               <div className="mega-column">
                 <span className="mega-label">Dominantní projekty</span>
                 {dominantProjects.map((project) => (
                   <a key={project.url} className="mega-link" href={project.url} target="_blank" rel="noreferrer">
-                    <strong>{project.name}</strong>
+                    <strong>
+                      <ExternalLink className="mega-link-icon" size={16} strokeWidth={2.1} aria-hidden="true" />
+                      {project.name}
+                    </strong>
                     <span>{getProjectHost(project.url)}</span>
                   </a>
                 ))}
@@ -139,18 +173,23 @@ export default function SiteHeader() {
               <div className="mega-column mega-column-action">
                 <span className="mega-label">Rychle</span>
                 <Link className="mega-cta mega-login-cta" href="/login" onClick={() => setIsOpen(false)}>
+                  <LogIn className="mega-action-icon" size={16} strokeWidth={2.2} aria-hidden="true" />
                   Přihlášení do správy
                 </Link>
-                <a className="mega-cta" href="mailto:kontakt@david-kozak.com">
+                <a className="mega-cta mega-email-cta" href="mailto:kontakt@david-kozak.com">
+                  <Mail className="mega-action-icon" size={16} strokeWidth={2.2} aria-hidden="true" />
                   kontakt@david-kozak.com
                 </a>
                 <Link className="mega-mini-link" href="/dashboard" onClick={() => setIsOpen(false)}>
+                  <Gauge className="mega-link-icon" size={15} strokeWidth={2.1} aria-hidden="true" />
                   Dashboard webu
                 </Link>
                 <Link className="mega-mini-link" href="/projekty" onClick={() => setIsOpen(false)}>
+                  <FolderOpen className="mega-link-icon" size={15} strokeWidth={2.1} aria-hidden="true" />
                   Veřejné projekty
                 </Link>
                 <Link className="mega-mini-link" href="/kontakt" onClick={() => setIsOpen(false)}>
+                  <MessageSquare className="mega-link-icon" size={15} strokeWidth={2.1} aria-hidden="true" />
                   Domluvit spolupráci
                 </Link>
               </div>

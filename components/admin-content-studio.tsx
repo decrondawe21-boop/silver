@@ -21,6 +21,7 @@ import {
   Textarea,
 } from "@once-ui-system/core"
 import { readStoredNews, writeStoredNews } from "@/lib/admin-news-storage"
+import { defaultFooterAds, sanitizeFooterAds, type FooterAd } from "@/resources/advertisements"
 import {
   defaultEditablePages,
   defaultHomeNews,
@@ -44,7 +45,7 @@ import {
   sanitizeEditablePages,
   writeStoredEditablePages,
 } from "@/lib/admin-site-storage"
-import AdminSidebar6 from "@/components/admin-sidebar6"
+import AdminSidebar6, { type AdminPanelId } from "@/components/admin-sidebar6"
 
 type NoticeTone = "success" | "warning" | "danger"
 
@@ -54,6 +55,7 @@ type NoticeState = {
 }
 
 type AdminExportPackage = {
+  ads: FooterAd[]
   exportedAt: string
   ownerProfile: OwnerProfile
   news: HomeNewsItem[]
@@ -62,6 +64,11 @@ type AdminExportPackage = {
 
 type SiteContentResponse = {
   pages?: EditablePage[]
+  error?: string
+}
+
+type AdsResponse = {
+  ads?: FooterAd[]
   error?: string
 }
 
@@ -201,6 +208,9 @@ function createDataDownload(content: string, filename: string, mimeType: string)
 }
 
 export default function AdminContentStudio() {
+  const [activePanel, setActivePanel] = useState<AdminPanelId>("overview")
+  const [ads, setAds] = useState<FooterAd[]>(defaultFooterAds)
+  const [isSavingAds, setIsSavingAds] = useState(false)
   const [items, setItems] = useState<HomeNewsItem[]>(defaultHomeNews)
   const [pages, setPages] = useState<EditablePage[]>(defaultEditablePages)
   const [selectedPageId, setSelectedPageId] = useState(defaultEditablePages[0]?.id ?? "")
@@ -211,10 +221,20 @@ export default function AdminContentStudio() {
   const [selectedId, setSelectedId] = useState<string>("new")
   const [notice, setNotice] = useState<NoticeState>({
     tone: "success",
-    text: "Lokální editor je připravený. Pro MySQL chybí produkční připojení.",
+    text: "Lokální editor je připravený. Mapa webu se ukládá do Supabase.",
   })
   const deferredContent = useDeferredValue(draft.content)
   const activeNotice = noticeVariants[notice.tone]
+
+  const selectPanel = (panelId: AdminPanelId) => {
+    setActivePanel(panelId)
+    window.requestAnimationFrame(() => {
+      document.getElementById("admin-workspace-top")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
+    })
+  }
 
   useEffect(() => {
     const stored = readStoredNews()
@@ -241,7 +261,7 @@ export default function AdminContentStudio() {
         if (!response.ok || !payload.pages) {
           setNotice({
             tone: "warning",
-            text: payload.error || "MySQL obsah webu se nepodařilo načíst. Používám lokální kopii.",
+            text: payload.error || "Supabase obsah webu se nepodařilo načíst. Používám lokální kopii.",
           })
           return
         }
@@ -251,13 +271,37 @@ export default function AdminContentStudio() {
         writeStoredEditablePages(dbPages)
         setSelectedPageId(dbPages[0]?.id ?? "")
         setSelectedSectionId(dbPages[0]?.sections[0]?.id ?? "")
-        setNotice({ tone: "success", text: "Mapa webu je načtená z MySQL." })
+        setNotice({ tone: "success", text: "Mapa webu je načtená ze Supabase." })
       } catch {
-        setNotice({ tone: "warning", text: "MySQL obsah webu se nepodařilo načíst. Používám lokální kopii." })
+        setNotice({ tone: "warning", text: "Supabase obsah webu se nepodařilo načíst. Používám lokální kopii." })
+      }
+    }
+
+    const loadAdsFromDb = async () => {
+      try {
+        const response = await fetch("/api/admin/ads", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        })
+        const payload = (await response.json()) as AdsResponse
+
+        if (!response.ok || !payload.ads) {
+          setNotice({
+            tone: "warning",
+            text: payload.error || "Reklamy se nepodařilo načíst ze Supabase. Používám výchozí sadu.",
+          })
+          return
+        }
+
+        setAds(sanitizeFooterAds(payload.ads))
+      } catch {
+        setNotice({ tone: "warning", text: "Reklamy se nepodařilo načíst ze Supabase. Používám výchozí sadu." })
       }
     }
 
     void loadPagesFromDb()
+    void loadAdsFromDb()
   }, [])
 
   const selectedPage = pages.find((page) => page.id === selectedPageId) ?? pages[0] ?? defaultEditablePages[0]
@@ -286,7 +330,7 @@ export default function AdminContentStudio() {
       if (!response.ok || !payload.pages) {
         setNotice({
           tone: "danger",
-          text: payload.error || "Mapa stránek se nepodařila uložit do MySQL.",
+          text: payload.error || "Mapa stránek se nepodařila uložit do Supabase.",
         })
         return false
       }
@@ -297,11 +341,74 @@ export default function AdminContentStudio() {
       setNotice({ tone, text: message })
       return true
     } catch {
-      setNotice({ tone: "danger", text: "Mapa stránek se nepodařila uložit do MySQL." })
+      setNotice({ tone: "danger", text: "Mapa stránek se nepodařila uložit do Supabase." })
       return false
     } finally {
       setIsSavingPages(false)
     }
+  }
+
+  const persistAds = async (nextAds: FooterAd[], message: string, tone: NoticeTone = "success") => {
+    const sanitized = sanitizeFooterAds(nextAds)
+    setAds(sanitized)
+    setIsSavingAds(true)
+
+    try {
+      const response = await fetch("/api/admin/ads", {
+        method: "PUT",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ads: sanitized }),
+      })
+      const payload = (await response.json()) as AdsResponse
+
+      if (!response.ok || !payload.ads) {
+        setNotice({
+          tone: "danger",
+          text: payload.error || "Reklamy se nepodařilo uložit do Supabase.",
+        })
+        return false
+      }
+
+      setAds(sanitizeFooterAds(payload.ads))
+      setNotice({ tone, text: message })
+      return true
+    } catch {
+      setNotice({ tone: "danger", text: "Reklamy se nepodařilo uložit do Supabase." })
+      return false
+    } finally {
+      setIsSavingAds(false)
+    }
+  }
+
+  const updateAd = (adId: string, field: keyof Omit<FooterAd, "id">, value: string | boolean) => {
+    setAds((current) => current.map((ad) => (ad.id === adId ? { ...ad, [field]: value } : ad)))
+  }
+
+  const addAd = () => {
+    setAds((current) => [
+      ...current,
+      {
+        id: `ad-${Date.now()}`,
+        title: "Nová reklama",
+        href: "https://",
+        imageUrl: "",
+        imageAlt: "Reklamní banner",
+        visible: false,
+      },
+    ])
+    setNotice({ tone: "success", text: "Nová reklama je přidaná jako skrytá." })
+  }
+
+  const deleteAd = (adId: string) => {
+    setAds((current) => current.filter((ad) => ad.id !== adId))
+    setNotice({ tone: "warning", text: "Reklama je odebraná z editoru. Ulož změny pro propsání do webu." })
+  }
+
+  const saveAds = async () => {
+    await persistAds(ads, "Reklamní lišta je uložená v Supabase.")
   }
 
   const selectPage = (pageId: string) => {
@@ -369,11 +476,11 @@ export default function AdminContentStudio() {
 
   const saveEditablePages = async () => {
     const normalized = sanitizeEditablePages(pages)
-    await persistPages(normalized, "Mapa stránek, sekcí a objektů je uložená v MySQL.")
+    await persistPages(normalized, "Mapa stránek, sekcí a objektů je uložená v Supabase.")
   }
 
   const resetEditablePages = async () => {
-    await persistPages(defaultEditablePages, "Mapa stránek je vrácená na výchozí obsah v MySQL.", "warning")
+    await persistPages(defaultEditablePages, "Mapa stránek je vrácená na výchozí obsah v Supabase.", "warning")
     setSelectedPageId(defaultEditablePages[0]?.id ?? "")
     setSelectedSectionId(defaultEditablePages[0]?.sections[0]?.id ?? "")
   }
@@ -678,6 +785,7 @@ export default function AdminContentStudio() {
   const exportAdminData = () => {
     const payload: AdminExportPackage = {
       exportedAt: new Date().toISOString(),
+      ads,
       ownerProfile: {
         ...ownerProfile,
         updatedAt: ownerProfile.updatedAt || new Date().toISOString(),
@@ -712,12 +820,15 @@ export default function AdminContentStudio() {
         const parsedOwner = sanitizeOwnerProfile(parsed.ownerProfile)
         const parsedNews = sanitizeNewsCollection(parsed.news)
         const parsedPages = sanitizeEditablePages(parsed.pages)
+        const parsedAds = sanitizeFooterAds(parsed.ads)
 
+        setAds(parsedAds)
         setOwnerProfile(parsedOwner)
         writeStoredOwnerProfile(parsedOwner)
         setPages(parsedPages)
         writeStoredEditablePages(parsedPages)
-        void persistPages(parsedPages, "Importovaná mapa stránek je uložená v MySQL.")
+        void persistPages(parsedPages, "Importovaná mapa stránek je uložená v Supabase.")
+        void persistAds(parsedAds, "Importovaná reklamní lišta je uložená v Supabase.")
         setSelectedPageId(parsedPages[0]?.id ?? "")
         setSelectedSectionId(parsedPages[0]?.sections[0]?.id ?? "")
 
@@ -742,8 +853,16 @@ export default function AdminContentStudio() {
 
   return (
     <div className="admin-shell">
-      <AdminSidebar6 activeDraftTitle={draft.title} publishedItems={countPublished(items)} totalItems={items.length} />
-      <section className="admin-studio" aria-labelledby="admin-title">
+      <AdminSidebar6
+        activePanel={activePanel}
+        activeDraftTitle={draft.title}
+        onSelectPanel={selectPanel}
+        publishedItems={countPublished(items)}
+        totalItems={items.length}
+      />
+      <section id="admin-workspace-top" className="admin-studio" aria-labelledby="admin-title">
+      {activePanel === "overview" ? (
+      <>
       <Column id="admin-overview" className="admin-hero" gap="24" fillWidth>
         <Background
           className="admin-hero-background"
@@ -775,7 +894,7 @@ export default function AdminContentStudio() {
               Admin panel pro obsah, aktuality a homepage.
             </Heading>
             <Text as="p" variant="body-default-l" onBackground="neutral-medium">
-              Obrázky, texty, kódové bloky a struktura homepage jsou na jednom místě. MySQL je připravené jako schéma a naváže se po dodání připojení.
+              Obrázky, texty, kódové bloky a struktura webu jsou rozdělené do oddílů v Sidebar6. Produkční obsah se ukládá do Supabase.
             </Text>
           </Column>
         </RevealFx>
@@ -803,16 +922,19 @@ export default function AdminContentStudio() {
         <div>
           <AdminTableBackground direction="bottom" />
           <span>DB</span>
-          <strong>SQL</strong>
-          <p>připravené MySQL schéma</p>
+          <strong>PG</strong>
+          <p>Supabase content store</p>
         </div>
       </Grid>
+      </>
+      ) : null}
 
       <Banner className="admin-notice-banner" role="status" solid={activeNotice.solid} onSolid={activeNotice.onSolid}>
         <Icon name={activeNotice.icon} size="s" />
         {notice.text}
       </Banner>
 
+      {activePanel === "pages" ? (
       <Grid id="admin-pages" className="admin-layout-grid" gap="16" fillWidth style={{ gridTemplateColumns: "minmax(280px, 0.64fr) minmax(0, 1.36fr)" }}>
         <aside className="admin-panel admin-list-panel" aria-label="Seznam stránek a sekcí">
           <AdminTableBackground direction="left" />
@@ -1062,7 +1184,9 @@ export default function AdminContentStudio() {
           </div>
         </section>
       </Grid>
+      ) : null}
 
+      {activePanel === "news" ? (
       <Grid className="admin-layout-grid" gap="16" fillWidth style={{ gridTemplateColumns: "minmax(280px, 0.68fr) minmax(0, 1.32fr)" }}>
         <aside id="admin-news-list" className="admin-panel admin-list-panel" aria-label="Seznam aktualit">
           <AdminTableBackground direction="left" />
@@ -1197,7 +1321,7 @@ export default function AdminContentStudio() {
 
           <Row className="admin-danger-row" fillWidth horizontal="between" vertical="center" gap="12" wrap>
             <Text as="p" variant="body-default-s" onBackground="neutral-weak">
-              Uložené změny se teď drží v lokálním prohlížeči. Po MySQL napojení půjdou přes API.
+              Aktuality se zatím drží v lokálním prohlížeči. Mapa stránek už běží přes chráněné API.
             </Text>
             <Button variant="danger" size="s" onClick={deleteDraft}>
               Smazat
@@ -1205,8 +1329,87 @@ export default function AdminContentStudio() {
           </Row>
         </div>
       </Grid>
+      ) : null}
 
-      <Grid className="admin-layout-grid" gap="16" fillWidth style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.82fr)" }}>
+      {activePanel === "ads" ? (
+      <Grid className="admin-layout-grid admin-single-panel-grid" gap="16" fillWidth>
+        <section id="admin-ads" className="admin-panel" aria-labelledby="admin-ads-title">
+          <AdminTableBackground direction="center" />
+          <div className="admin-panel-heading admin-editor-heading">
+            <div>
+              <span>Reklamní lišta</span>
+              <h2 id="admin-ads-title">Vkládání, úpravy a viditelnost</h2>
+            </div>
+            <Row gap="8" wrap>
+              <Button variant="secondary" size="s" onClick={addAd}>
+                Přidat reklamu
+              </Button>
+              <Button variant="primary" size="s" onClick={saveAds} disabled={isSavingAds}>
+                {isSavingAds ? "Ukládám..." : "Uložit reklamy"}
+              </Button>
+            </Row>
+          </div>
+
+          <div className="admin-ad-editor-list">
+            {ads.map((ad) => (
+              <div className={ad.visible ? "admin-ad-editor-card" : "admin-ad-editor-card is-hidden"} key={ad.id}>
+                <div className="admin-panel-heading admin-editor-heading">
+                  <div>
+                    <span>{ad.visible ? "Viditelná" : "Skrytá"}</span>
+                    <h3>{ad.title || "Reklama"}</h3>
+                  </div>
+                  <Row gap="8" wrap>
+                    <Button
+                      variant={ad.visible ? "secondary" : "primary"}
+                      size="s"
+                      onClick={() => updateAd(ad.id, "visible", !ad.visible)}
+                    >
+                      {ad.visible ? "Skrýt" : "Zobrazit"}
+                    </Button>
+                    <Button variant="danger" size="s" onClick={() => deleteAd(ad.id)}>
+                      Smazat
+                    </Button>
+                  </Row>
+                </div>
+                <Grid className="admin-page-meta-grid" gap={12} fillWidth>
+                  <Input
+                    id={`${ad.id}-title`}
+                    label="Název"
+                    value={ad.title}
+                    onChange={(event) => updateAd(ad.id, "title", event.target.value)}
+                  />
+                  <Input
+                    id={`${ad.id}-href`}
+                    label="Cílový odkaz"
+                    value={ad.href}
+                    onChange={(event) => updateAd(ad.id, "href", event.target.value)}
+                  />
+                  <Input
+                    id={`${ad.id}-image`}
+                    label="URL obrázku"
+                    value={ad.imageUrl}
+                    onChange={(event) => updateAd(ad.id, "imageUrl", event.target.value)}
+                    placeholder="/ads/banner.png"
+                  />
+                  <Input
+                    id={`${ad.id}-alt`}
+                    label="Alt text"
+                    value={ad.imageAlt}
+                    onChange={(event) => updateAd(ad.id, "imageAlt", event.target.value)}
+                  />
+                </Grid>
+                <div className="admin-ad-preview">
+                  {ad.imageUrl ? <img src={ad.imageUrl} alt={ad.imageAlt || ad.title} /> : <span>Bez obrázku</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </Grid>
+      ) : null}
+
+      {activePanel === "owner" ? (
+      <Grid className="admin-layout-grid admin-single-panel-grid" gap="16" fillWidth>
         <section id="admin-owner" className="admin-panel" aria-labelledby="owner-title">
           <AdminTableBackground direction="left" />
           <div className="admin-panel-heading">
@@ -1289,7 +1492,11 @@ export default function AdminContentStudio() {
             </Text>
           </Row>
         </section>
+      </Grid>
+      ) : null}
 
+      {activePanel === "data" ? (
+      <Grid className="admin-layout-grid admin-single-panel-grid" gap="16" fillWidth>
         <section id="admin-data" className="admin-panel" aria-labelledby="admin-data-title">
           <AdminTableBackground direction="right" />
           <div className="admin-panel-heading">
@@ -1343,8 +1550,10 @@ export default function AdminContentStudio() {
           </div>
         </section>
       </Grid>
+      ) : null}
 
-      <Grid className="admin-layout-grid" gap="16" fillWidth style={{ gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 0.82fr)" }}>
+      {activePanel === "preview" ? (
+      <Grid className="admin-layout-grid admin-single-panel-grid" gap="16" fillWidth>
         <section id="admin-preview" className="admin-panel admin-preview-panel" aria-labelledby="preview-title">
           <AdminTableBackground direction="top" />
           <div className="admin-panel-heading">
@@ -1364,15 +1573,19 @@ export default function AdminContentStudio() {
             </div>
           </article>
         </section>
+      </Grid>
+      ) : null}
 
+      {activePanel === "database" ? (
+      <Grid className="admin-layout-grid admin-single-panel-grid" gap="16" fillWidth>
         <section id="admin-mysql" className="admin-panel" aria-labelledby="mysql-title">
           <AdminTableBackground direction="bottom" />
           <div className="admin-panel-heading">
             <span>Databáze</span>
-            <h2 id="mysql-title">MySQL návrh</h2>
+            <h2 id="mysql-title">Supabase content store</h2>
           </div>
           <p className="admin-muted">
-            Produkční ukládání vyžaduje `MYSQL_URL`, upload storage a chráněné API. Schéma je připravené pro aktuality na homepage.
+            Produkční mapa stránek se ukládá do Supabase Postgres přes chráněné API. Aktuality zatím zůstávají v lokálním editoru.
           </p>
           <AccordionGroup
             className="admin-accordion-group"
@@ -1380,14 +1593,14 @@ export default function AdminContentStudio() {
             size="m"
             items={[
               {
-                title: "SQL tabulka pro aktuality",
+                title: "SQL tabulka pro editovatelný obsah",
                 content: <pre className="admin-code-block">{mysqlContentSchema}</pre>,
               },
               {
                 title: "Další backend krok",
                 content: (
                   <Text as="p" variant="body-default-s" onBackground="neutral-weak">
-                    Přidat chráněné API routy pro upload obrázků, ukládání příspěvků a načítání publikovaných aktualit z MySQL místo localStorage.
+                    Přidat upload obrázků do objektového úložiště a uložit aktuality do databáze místo localStorage.
                   </Text>
                 ),
               },
@@ -1395,7 +1608,9 @@ export default function AdminContentStudio() {
           />
         </section>
       </Grid>
+      ) : null}
 
+      {activePanel === "structure" ? (
       <section id="admin-sections" className="admin-panel admin-section-map" aria-labelledby="sections-title">
         <AdminTableBackground direction="center" />
         <div className="admin-panel-heading">
@@ -1418,6 +1633,7 @@ export default function AdminContentStudio() {
           }))}
         />
       </section>
+      ) : null}
       </section>
     </div>
   )
