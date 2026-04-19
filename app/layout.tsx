@@ -4,7 +4,7 @@ import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import { ThemeInit } from "@once-ui-system/core"
 import OnceUiProviders from "@/app/once-ui-providers"
-import { getSiteUrl, siteDescription, siteName } from "@/lib/site"
+import { createAbsoluteUrl, getSiteUrl, siteDescription, siteName } from "@/lib/site"
 import { fonts, onceUiTheme } from "@/resources/once-ui.config"
 import "@once-ui-system/core/css/styles.css"
 import "@once-ui-system/core/css/tokens.css"
@@ -73,18 +73,18 @@ export const metadata: Metadata = {
     "Silver",
   ],
   alternates: {
-    canonical: "/",
+    canonical: createAbsoluteUrl("/"),
   },
   openGraph: {
     type: "website",
     locale: "cs_CZ",
-    url: "/",
+    url: createAbsoluteUrl("/"),
     siteName,
     title: siteName,
     description: siteDescription,
     images: [
       {
-        url: `${siteUrl}/opengraph-image`,
+        url: createAbsoluteUrl("/opengraph-image"),
         width: 1200,
         height: 630,
         alt: "David Kozák Silver",
@@ -95,7 +95,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteName,
     description: siteDescription,
-    images: [`${siteUrl}/twitter-image`],
+    images: [createAbsoluteUrl("/twitter-image")],
   },
   robots: {
     index: true,

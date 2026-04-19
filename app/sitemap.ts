@@ -1,15 +1,19 @@
 import type { MetadataRoute } from "next"
-import { getSiteUrl } from "@/lib/site"
+import { createAbsoluteUrl } from "@/lib/site"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const siteUrl = getSiteUrl()
-
-  return [
-    {
-      url: `${siteUrl}/`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
+  const pages = [
+    { path: "/", priority: 1 },
+    { path: "/profil", priority: 0.78 },
+    { path: "/sluzby", priority: 0.82 },
+    { path: "/projekty", priority: 0.86 },
+    { path: "/kontakt", priority: 0.72 },
   ]
+
+  return pages.map((page) => ({
+    url: createAbsoluteUrl(page.path),
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: page.priority,
+  }))
 }

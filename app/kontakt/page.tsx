@@ -1,12 +1,14 @@
 import type { Metadata } from "next"
 import ElectricPanel from "@/components/electric-panel"
 import SiteFrame from "@/components/site-frame"
+import { createSeoMetadata } from "@/lib/site"
 import { getEditablePageByPath, getEditableSection } from "@/lib/site-content-db"
 
-export const metadata: Metadata = {
-  title: "Kontakt | David Kozák Silver",
+export const metadata: Metadata = createSeoMetadata({
+  title: "Kontakt",
   description: "Kontakt pro spolupráci na webu, osobní prezentaci, automatizaci a digitální strategii.",
-}
+  path: "/kontakt",
+})
 
 export const dynamic = "force-dynamic"
 

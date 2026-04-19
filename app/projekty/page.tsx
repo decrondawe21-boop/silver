@@ -3,13 +3,15 @@ import { Badge, Column, Row, Scroller, Text } from "@once-ui-system/core"
 import DynamicReveal from "@/components/dynamic-reveal"
 import ProjectPreviewCard from "@/components/project-preview-card"
 import SiteFrame from "@/components/site-frame"
+import { createSeoMetadata } from "@/lib/site"
 import { getEditablePageByPath, getEditableSection } from "@/lib/site-content-db"
 import { dominantProjects, otherProjects } from "@/resources/site-content"
 
-export const metadata: Metadata = {
-  title: "Projekty | David Kozák Silver",
+export const metadata: Metadata = createSeoMetadata({
+  title: "Projekty",
   description: "Veřejné projekty Davida Kozáka s automatickými miniaturami, odkazy a krátkým popisem.",
-}
+  path: "/projekty",
+})
 
 export const dynamic = "force-dynamic"
 
