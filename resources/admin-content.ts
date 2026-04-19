@@ -389,8 +389,9 @@ export const mysqlContentSchema = `CREATE TABLE home_news (
 CREATE INDEX home_news_status_date_idx
   ON home_news (status, published_at);
 
-CREATE TABLE site_content_documents (
+-- Supabase/Postgres content document table:
+CREATE TABLE IF NOT EXISTS site_content_documents (
   document_key VARCHAR(80) PRIMARY KEY,
-  document_json LONGTEXT NOT NULL,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  document_json TEXT NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );`

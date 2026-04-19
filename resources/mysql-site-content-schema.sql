@@ -1,5 +1,0 @@
-CREATE TABLE site_content_documents (
-  document_key VARCHAR(80) PRIMARY KEY,
-  document_json LONGTEXT NOT NULL,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);

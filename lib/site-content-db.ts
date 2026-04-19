@@ -1,29 +1,23 @@
 import "server-only"
 
-import { type RowDataPacket } from "mysql2/promise"
-
 import { defaultEditablePages, type EditablePage, type EditablePageSection } from "@/resources/admin-content"
 import { sanitizeEditablePages } from "@/lib/admin-site-storage"
-import { getMysqlPool } from "@/lib/mysql"
+import { getPostgresPool } from "@/lib/postgres"
 
 const editablePagesDocumentKey = "editable_pages"
 
-type SiteContentRow = RowDataPacket & {
-  document_json: string
-}
-
 export async function readEditablePagesFromDb() {
-  const [rows] = await getMysqlPool().execute<SiteContentRow[]>(
+  const result = await getPostgresPool().query<{ document_json: string }>(
     `
       SELECT document_json
       FROM site_content_documents
-      WHERE document_key = ?
+      WHERE document_key = $1
       LIMIT 1
     `,
     [editablePagesDocumentKey],
   )
 
-  const document = rows[0]?.document_json
+  const document = result.rows[0]?.document_json
   if (!document) {
     return defaultEditablePages
   }
@@ -38,12 +32,12 @@ export async function readEditablePagesFromDb() {
 export async function writeEditablePagesToDb(pages: EditablePage[]) {
   const sanitized = sanitizeEditablePages(pages)
 
-  await getMysqlPool().execute(
+  await getPostgresPool().query(
     `
       INSERT INTO site_content_documents (document_key, document_json)
-      VALUES (?, ?)
-      ON DUPLICATE KEY UPDATE
-        document_json = VALUES(document_json),
+      VALUES ($1, $2)
+      ON CONFLICT (document_key) DO UPDATE SET
+        document_json = EXCLUDED.document_json,
         updated_at = CURRENT_TIMESTAMP
     `,
     [editablePagesDocumentKey, JSON.stringify(sanitized)],
@@ -53,17 +47,17 @@ export async function writeEditablePagesToDb(pages: EditablePage[]) {
 }
 
 export async function seedEditablePagesIfMissing() {
-  const [rows] = await getMysqlPool().execute<RowDataPacket[]>(
+  const result = await getPostgresPool().query<{ document_key: string }>(
     `
       SELECT document_key
       FROM site_content_documents
-      WHERE document_key = ?
+      WHERE document_key = $1
       LIMIT 1
     `,
     [editablePagesDocumentKey],
   )
 
-  if (rows.length > 0) {
+  if (result.rows.length > 0) {
     return readEditablePagesFromDb()
   }
 
