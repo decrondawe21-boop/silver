@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { AccordionGroup, Badge, Button, Column, Icon, Row, Text, User } from "@once-ui-system/core"
+import { Badge, Button, Icon, Row, Text, User } from "@once-ui-system/core"
 import {
   adminSessionEvent,
   defaultAdminSession,
@@ -127,9 +127,10 @@ export default function AdminSidebar6({
     router.refresh()
   }
 
-  const navGroups: Array<{ title: ReactNode; links: SidebarLink[] }> = [
+  const navGroups: Array<{ icon: string; label: string; links: SidebarLink[] }> = [
     {
-      title: <SidebarTitle icon="document" label="Pracovní plocha" />,
+      icon: "document",
+      label: "Pracovní plocha",
       links: [
         {
           panelId: "overview",
@@ -159,7 +160,8 @@ export default function AdminSidebar6({
       ],
     },
     {
-      title: <SidebarTitle icon="world" label="Homepage" />,
+      icon: "world",
+      label: "Homepage",
       links: [
         {
           panelId: "pages",
@@ -189,7 +191,8 @@ export default function AdminSidebar6({
       ],
     },
     {
-      title: <SidebarTitle icon="security" label="Systém" />,
+      icon: "security",
+      label: "Systém",
       links: [
         {
           panelId: "data",
@@ -214,9 +217,9 @@ export default function AdminSidebar6({
   ]
 
   return (
-    <aside className="admin-sidebar6" aria-label="Sidebar6 administrace">
+    <aside className="admin-sidebar6" aria-label="Administrace obsahu">
       <div className="admin-sidebar6-head">
-        <Badge title="Sidebar6" icon="document" arrow={false} effect={false} />
+        <Badge title="Admin Console" icon="document" arrow={false} effect={false} />
         <h2>Správa webu</h2>
         <Text as="p" variant="body-default-s" onBackground="neutral-weak">
           Rychlá navigace po editoru, databázi a homepage sekcích.
@@ -234,14 +237,14 @@ export default function AdminSidebar6({
         </span>
       </div>
 
-      <AccordionGroup
-        className="admin-sidebar6-nav"
-        autoCollapse={false}
-        size="s"
-        items={navGroups.map((group) => ({
-          title: group.title,
-          content: (
-            <Column gap="8" fillWidth>
+      <nav className="admin-sidebar6-nav" aria-label="Administrace obsahu">
+        {navGroups.map((group) => (
+          <details className="admin-sidebar6-group" open key={group.label}>
+            <summary>
+              <SidebarTitle icon={group.icon} label={group.label} />
+              <span className="admin-sidebar6-chevron" aria-hidden="true" />
+            </summary>
+            <div className="admin-sidebar6-group-content">
               {group.links.map((link) => (
                 <SidebarLinkItem
                   key={`${link.label}-${link.href ?? link.panelId}`}
@@ -250,10 +253,10 @@ export default function AdminSidebar6({
                   onSelectPanel={onSelectPanel}
                 />
               ))}
-            </Column>
-          ),
-        }))}
-      />
+            </div>
+          </details>
+        ))}
+      </nav>
 
       <div className="admin-sidebar6-profile" aria-label="Profil správce">
         <User

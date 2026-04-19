@@ -4,6 +4,7 @@ export type FooterAd = {
   href: string
   imageUrl: string
   imageAlt: string
+  mediaType: "image" | "video"
   visible: boolean
 }
 
@@ -14,6 +15,7 @@ export const defaultFooterAds: FooterAd[] = [
     href: "https://repasmobile.david-kozak.com",
     imageUrl: "/ads/repas-mobile-ad.png",
     imageAlt: "Repas Mobile reklama na repasované telefony",
+    mediaType: "image",
     visible: true,
   },
   {
@@ -22,6 +24,25 @@ export const defaultFooterAds: FooterAd[] = [
     href: "https://studio.david-kozak.com",
     imageUrl: "/ads/f-studio-growth-ad.png",
     imageAlt: "F-Studio reklama s grafem růstu",
+    mediaType: "image",
+    visible: true,
+  },
+  {
+    id: "restart-integrace",
+    title: "Restart Integrace",
+    href: "https://restartintegrace.david-kozak.com",
+    imageUrl: "/ads/restart-integrace-ad.mp4",
+    imageAlt: "Restart Integrace video reklama",
+    mediaType: "video",
+    visible: true,
+  },
+  {
+    id: "creative-fabrica-fonts",
+    title: "Creative Fabrica fonts",
+    href: "https://www.creativefabrica.com/freebies/free-fonts/ref/17041091/",
+    imageUrl: "https://www.creativefabrica.com/wp-content/uploads/2018/01/freebie-banners3-party-04.png",
+    imageAlt: "Font Banner - Free Fonts",
+    mediaType: "image",
     visible: true,
   },
 ]
@@ -44,6 +65,7 @@ function sanitizeAd(candidate: unknown): FooterAd | null {
     href,
     imageUrl,
     imageAlt: typeof record.imageAlt === "string" && record.imageAlt.trim() ? record.imageAlt.trim() : title,
+    mediaType: record.mediaType === "video" || imageUrl.toLowerCase().endsWith(".mp4") ? "video" : "image",
     visible: record.visible !== false,
   }
 }

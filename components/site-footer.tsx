@@ -41,7 +41,11 @@ export default async function SiteFooter() {
               rel="sponsored noopener"
               key={ad.id}
             >
-              <img src={ad.imageUrl} alt={ad.imageAlt} loading="lazy" decoding="async" />
+              {ad.mediaType === "video" ? (
+                <video src={ad.imageUrl} aria-label={ad.imageAlt} autoPlay muted playsInline preload="metadata" />
+              ) : (
+                <img src={ad.imageUrl} alt={ad.imageAlt} loading="lazy" decoding="async" />
+              )}
             </a>
           ))}
         </div>

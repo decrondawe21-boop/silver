@@ -396,6 +396,7 @@ export default function AdminContentStudio() {
         href: "https://",
         imageUrl: "",
         imageAlt: "Reklamní banner",
+        mediaType: "image",
         visible: false,
       },
     ])
@@ -1386,10 +1387,10 @@ export default function AdminContentStudio() {
                   />
                   <Input
                     id={`${ad.id}-image`}
-                    label="URL obrázku"
+                    label="URL obrázku / videa"
                     value={ad.imageUrl}
                     onChange={(event) => updateAd(ad.id, "imageUrl", event.target.value)}
-                    placeholder="/ads/banner.png"
+                    placeholder="/ads/banner.png nebo /ads/video.mp4"
                   />
                   <Input
                     id={`${ad.id}-alt`}
@@ -1398,8 +1399,30 @@ export default function AdminContentStudio() {
                     onChange={(event) => updateAd(ad.id, "imageAlt", event.target.value)}
                   />
                 </Grid>
+                <Row gap="8" wrap>
+                  <Button
+                    variant={ad.mediaType === "image" ? "primary" : "secondary"}
+                    size="s"
+                    onClick={() => updateAd(ad.id, "mediaType", "image")}
+                  >
+                    Obrázek
+                  </Button>
+                  <Button
+                    variant={ad.mediaType === "video" ? "primary" : "secondary"}
+                    size="s"
+                    onClick={() => updateAd(ad.id, "mediaType", "video")}
+                  >
+                    Video
+                  </Button>
+                </Row>
                 <div className="admin-ad-preview">
-                  {ad.imageUrl ? <img src={ad.imageUrl} alt={ad.imageAlt || ad.title} /> : <span>Bez obrázku</span>}
+                  {ad.imageUrl && ad.mediaType === "video" ? (
+                    <video src={ad.imageUrl} aria-label={ad.imageAlt || ad.title} autoPlay muted playsInline preload="metadata" />
+                  ) : null}
+                  {ad.imageUrl && ad.mediaType !== "video" ? (
+                    <img src={ad.imageUrl} alt={ad.imageAlt || ad.title} />
+                  ) : null}
+                  {!ad.imageUrl ? <span>Bez média</span> : null}
                 </div>
               </div>
             ))}

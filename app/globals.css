@@ -2424,12 +2424,59 @@ h3 {
 }
 
 .admin-sidebar6-nav {
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  display: grid;
+  gap: 8px;
+}
+
+.admin-sidebar6-group {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.025);
 }
 
-.admin-sidebar6-nav [role="button"] {
+.admin-sidebar6-group summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 10px;
   color: rgba(255, 255, 255, 0.84);
+  cursor: pointer;
+  list-style: none;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.admin-sidebar6-group summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-sidebar6-group summary:hover,
+.admin-sidebar6-group summary:focus-visible {
+  background: rgba(169, 241, 214, 0.08);
+  color: rgba(255, 255, 255, 0.96);
+  outline: none;
+}
+
+.admin-sidebar6-chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(255, 255, 255, 0.6);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.6);
+  transform: rotate(45deg);
+  transition: transform 160ms ease;
+}
+
+.admin-sidebar6-group[open] .admin-sidebar6-chevron {
+  transform: rotate(225deg);
+}
+
+.admin-sidebar6-group-content {
+  display: grid;
+  gap: 8px;
+  padding: 0 10px 10px;
 }
 
 .admin-sidebar6-title {
@@ -2580,7 +2627,8 @@ button.admin-sidebar6-link {
   font-weight: 760;
 }
 
-.admin-ad-preview img {
+.admin-ad-preview img,
+.admin-ad-preview video {
   width: 100%;
   max-height: 320px;
   object-fit: contain;
@@ -3163,7 +3211,8 @@ button.admin-sidebar6-link {
   transform: translateX(24%);
 }
 
-.footer-ad-card img {
+.footer-ad-card img,
+.footer-ad-card video {
   width: 100%;
   height: clamp(150px, 18vw, 220px);
   border-radius: 6px;
